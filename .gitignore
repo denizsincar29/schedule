@@ -1,0 +1,13 @@
+/.json
+schedule.txt
+/.log
+cache/
+.env
+/.bat
+*.pyc
+build/
+dist/
+__pycache__/
+venv/
+*.pyo
+*.pyd

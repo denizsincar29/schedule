@@ -1,0 +1,30 @@
+{
+  "api": {
+    "token": "eyJ4NXQiOiJOMkU0WXpBMVpHWmpZV1ZoTmpJNFl6Z3pNVEkxTTJZMU5HRXdaV1ZsWkRNM1pqVTNOV1l6T0EiLCJraWQiOiJkMGVjNTE0YTMyYjZmODhjMGFiZDEyYTI4NDA2OTliZGQzZGViYTlkIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiIwOWUyZmY0NC1lNjEyLTRlMjMtOTEyOC0wZTIzZDNkYmMzNmYiLCJhdWQiOlsiWUROQ2VDUHNmMXpMMmV0R1FmbGlqeWZ6bzg4YSJdLCJhenAiOiJZRE5DZUNQc2YxekwyZXRHUWZsaWp5ZnpvODhhIiwiRXh0ZXJuYWxQZXJzb25JZCI6ImIxMjZkZWM4LWI4MGUtNDUyMC1hZThhLWU1MDljNTA0NjU2YSIsImlzcyI6Imh0dHBzOlwvXC9uYXJmdS1hdXRoLm1vZGV1cy5vcmc6NDQzXC9vYXV0aDJcL3Rva2VuIiwicHJlZmVycmVkX3VzZXJuYW1lIjoi0KHQuNC90LTQttCw0YAg0JTQtdC90LjQtyIsImV4cCI6MTcxNDk3MzIzOCwibm9uY2UiOiIwOGNkM2EyMWU5NzI0MDQwYWNiNDhjZjNhMzViMGM0YiIsImlhdCI6MTcxNDg4NjgzOCwicGVyc29uX2lkIjoiN2ExZWQ0NzMtNGMwYS00MDBiLWFkNzItZjJlZjQ3Yzk4NGU3In0.I7iVQZbk83Q4kYbvO5R8WjjMYX_x12mx-VAVJax3fKdXo0jzWofTlG1BCgG_q78sg0o7DKbgxlFbvwji226PF6SAAeVjB1c2RZdy65AZp6U1nrAbbodnowSZgBju0HbYD5H6QFJEkhqRk4bC5UA41bi0zvf_qCeVlql4DtWxZeTCDwQexBvNeQoFw-Esyn2rspjwPcsQQbDQ_cTjQOU5mnZtXRwSqlD7z2sKVCW8tarF-nY_mAcoHmuWxQRraev5flj2mMFLRjlGdn6HGtzaYT7HeVXSnLR6OGDqzPbdfaevcwt4Oa57SDr3wjfDPwgGi07BLQk-GHRMTW8z3l0nfg",
+    "expires": 1714930040.112701
+  },
+  "person": {
+    "lastName": "Гвоздухина",
+    "firstName": "Яна",
+    "middleName": "Васильевна",
+    "fullName": "Гвоздухина Яна Васильевна",
+    "_links": {
+      "self": {
+        "href": "/91e3c617-2d9b-4284-ae1f-0a1b5b804ee6"
+      }
+    },
+    "id": "91e3c617-2d9b-4284-ae1f-0a1b5b804ee6"
+  },
+  "person_info": {
+    "id": "65a4ee49-860d-4d32-b411-f43da25e1614",
+    "personId": "91e3c617-2d9b-4284-ae1f-0a1b5b804ee6",
+    "flowId": "86f903cf-49e6-4097-afeb-401e92caa9b4",
+    "flowCode": "2022, ОФО, Бакалавриат, специалитет",
+    "specialtyCode": "09.03.00",
+    "specialtyName": "Информатика и вычислительная техника",
+    "specialtyProfile": null,
+    "learningStartDate": "2023-09-01T00:00:00Z",
+    "learningEndDate": "2023-09-01T00:00:00Z"
+  },
+  "ask_name_everytime": {}
+}
