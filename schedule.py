@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import json
 import os
+from copy import deepcopy  # prevent a huge expensive error that I would spend hours to debug!
 from modeus import modeus_parse_token, get_schedule, search_person, who_goes
 
 from pytz import timezone
@@ -76,8 +77,8 @@ class Schedule:
 
     def cache_people(self, people=[]):
         # save self.people to cache, but append and remove duplicates
-        if people==[] or people is None: people=self.people.copy()  # when self.people changes, dont change people.
-        else: people=people.copy()  # or it will change the original list
+        if people==[] or people is None: people=deepcopy(self.people)  # when self.people changes, dont change people.
+        else: people=deepcopy(people)  # or it will change the original list
         current_person=self.current_person
         self.load_people()
         if self.current_person is None: self.current_person=current_person  # retrieve back
@@ -144,7 +145,8 @@ class Schedule:
             try: os.remove(f"cache/{start_time.month-1}.{person_id}.json")
             except FileNotFoundError: pass
         # filter out diffs that are outdated
-        diff=schedparser.filter_events(diff, datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0))
+        st=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
+        delta=end_time-st
         return diff  # if there is no diff, it will return empty list
 
 

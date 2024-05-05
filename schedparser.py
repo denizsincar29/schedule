@@ -4,6 +4,7 @@
 # prepared data: the data that is returned by the server, but is already parsed
 
 from datetime import datetime
+from copy import deepcopy
 
 STUDIES = ["08:20", "10:10", "12:00", "14:30", "16:15", "18:00", "19:40"]
 
@@ -119,7 +120,7 @@ def filter_events(data, date=None, delta=None, start_time=None, end_time=None, e
         if date is not None and delta is not None:
             if event_date < date or event_date > date + delta:
                 continue
-        if date is not None and event_date != date:  # now if no delta, then only date
+        if date is not None and delta is None and event_date != date:  # now if no delta, then only date
             continue
         if start_time is not None and event_start_time < start_time:
             continue
@@ -298,7 +299,7 @@ def humanize_person(person_id, data):
 def events_equality(event1, event2):
     # if ids are not equal, []. If ids are equal but some fields are not, then return the fields that are not equal. If all fields are equal, then return ...
     if event1==event2:
-        return ...
+        return ...  # dotdotdot!
     if event1['id']!=event2['id']:
         return []
     diff=[]
@@ -321,8 +322,12 @@ def events_equality(event1, event2):
     if event1['status']!=event2['status']:
         diff.append("status")
     return diff
+
+
 def diff(old, new):
     # returns the difference between two lists of events in the prepared data format with the diff key. Return only added, removed and changed events
+    old=deepcopy(old)
+    new=deepcopy(new)
     events=[]
     # get all ids
     ids_old={event['id'] for event in old}
@@ -344,7 +349,7 @@ def diff(old, new):
         event1=get_event_by_id(event, old)
         event2=get_event_by_id(event, new)
         diff=events_equality(event1, event2)
-        if diff!=...:
+        if diff!=... and diff!=[]:  # empty list is no diff, dotdotdot is all fields are equal
             event2['diff']=" ".join(diff)
             events.append(event2)
     return events
@@ -372,7 +377,7 @@ def human_diff(diff, date=None, delta=None, ifnodiff=False):
             msg+=f"Снята пара {event['event']}: {event['name']} с Преподавателем {event['teacher']}. {MSGS['in_room'][True].format(room_name=event['room_name'], address=event['address']) if event['room_name'] is not None else MSGS['online'][True]}\n"  # if event removed, then no need to show full info.
         else:
             # if only status changed, then no need to show it
-            if event['diff']!="status":
+            if event['diff']=="status":
                 continue # we're done here
             msg+=f"Изменена пара {event['event']}: с {event['start_time']} до {event['end_time']}. {event['name']}. Преподаватель {event['teacher']}. {MSGS['in_room'][False].format(room_name=event['room_name'], address=event['address']) if event['room_name'] is not None else MSGS['online'][False]}\n"
             # изменился e.g. преподаватель, аудитория
@@ -394,5 +399,6 @@ def human_diff(diff, date=None, delta=None, ifnodiff=False):
                 elif field=="address":
                     msg+=f"Изменен адрес аудитории на {event['address']}\n"
                 #elif field=="status":  # there is no need to show status change.
+    print("debug: ", msg)
     return msg
 

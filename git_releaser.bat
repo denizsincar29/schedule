@@ -1,5 +1,4 @@
 @echo off
-pyinstaller schedule.spec
 echo releasing to github
 echo release notes taken from release.md
 gh release create v%1 -F release.md dist/schedule.exe
