@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import json
+import os
 from modeus import modeus_parse_token, get_schedule, search_person, who_goes
 
 from pytz import timezone
@@ -67,7 +68,7 @@ class Schedule:
     def check_token(self):
         if self.token==...:  # first run
             self.load_token()
-        if datetime.now()>self.expire or self.token==None:  # token expired or not loaded
+        if datetime.now()>self.expire or self.token is None:  # token expired or not loaded
             print("getting_token")
             self.token=modeus_parse_token(self.email, self.password)            
             self.expire=datetime.now()+timedelta(hours=12)  # modeus token lives for 12 hours and dies!
@@ -75,7 +76,7 @@ class Schedule:
 
     def cache_people(self, people=[]):
         # save self.people to cache, but append and remove duplicates
-        if people==[] or people==None: people=self.people.copy()  # when self.people changes, dont change people.
+        if people==[] or people is None: people=self.people.copy()  # when self.people changes, dont change people.
         else: people=people.copy()  # or it will change the original list
         current_person=self.current_person
         self.load_people()

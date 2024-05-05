@@ -2,6 +2,8 @@ from schedule import Schedule
 import schedparser
 from datetime import datetime
 from pytz import timezone
+import os
+from sys import exit  # pyinstaller can't find it in some cases
 
 from inputval import inputwhile, input_int, inputwhile_ctrlc, ContinueLoop
 import re
@@ -35,7 +37,7 @@ def command(cmd):  # inputwhile callback
         print("Выход")
         exit()
     if cmd=="resave":
-        fio=inputwhile("Как тебя зовут? ->", search_person_cb)  # resave
+        inputwhile("Как тебя зовут? ->", search_person_cb)  # resave
         return
     if cmd=="search" or cmd=="friend":
         inputwhile("Как зовут? ->", search_person_cb, False)
