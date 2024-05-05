@@ -1,4 +1,4 @@
-# schedule 2.0
+# schedule 1.0
 by Deniz Sincar <deniz@r1oaz.ru>  
 This program is designed to view the schedule of students, teachers and other people at Northern Arctic Federal University (Arkhangelsk, Russia).
 It supports searching for people, viewing the schedule for today, for a specific day, and the intersection of the schedule with another person.
@@ -35,8 +35,8 @@ Use this program as you like, but do not forget to mention the author. I'm not r
 # contacts
 If you have any questions, suggestions or found a bug, write to @denizsincar29 on telegram or deniz@r1oaz.ru.
 # changelog
-## 2.0:
-- 75% of the code was rewritten- the most part of the code was hard to use in the future, navigation was difficult, and the code was not very readable.
+## 1.0:
+- 75% of the code was rewritten. the most part of the code was hard to use in the future, navigation was difficult, and the code was not very readable.
 The human-parser was rewritten to use intermediate beautiful jsons. Parsing from server output, a huge json directly to human-readable format was a terrible idea.
 - Completely rewritten the cache system. Now the cache is stored in jsons, which can be easily read and deleted. The cache is stored in the cache folder.
 - completed the overlap of schedules with another person. Now you can see the intersection of your schedule with another person.
@@ -44,7 +44,7 @@ The human-parser was rewritten to use intermediate beautiful jsons. Parsing from
 Therefore, I added the ability to change the profile, and temperarily switch to another person's schedule without changing the main profile.
 - Now schedule is cached in the cache folder. The cache is stored in jsons, which can be easily read and deleted. The full month schedule is cached, but in case it changes, the cache is updated at the start of the program. (to be added)
 - Over all,  there are many changes here and there.
-## 1.0:
+## 0.0 private alpha:
 - Initial release.  
 The change log was not kepped, but the program had nearly the same functionality. The code was not very readable, and the cache was stored in txt files.
 

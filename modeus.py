@@ -1,7 +1,6 @@
-import json
 import httpx
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from pytz import UTC
 
 def modeus_parse_token(email: str, password: str) -> str:
