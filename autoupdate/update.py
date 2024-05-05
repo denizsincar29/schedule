@@ -56,21 +56,21 @@ def check_and_update(user, repo, current_version, download_path):
         download_path (str): The path where the downloaded release file will be saved.
 
     Yields:
-        tuple: A tuple containing a boolean value indicating whether an update is available, and the latest version number.
+        tuple: A tuple containing a boolean value indicating whether an update is available, the latest version number, and what's new or empty string.
 
     """
     release = get_latest_release(user, repo)
     latest_version = release['tag_name']
     # if no release is found, return False
     if not latest_version:
-        yield (False, "0.0.0")
+        yield (False, "0.0.0", "no release found")
     if version.parse(latest_version) > version.parse(current_version):
-        yield (..., latest_version)
+        yield (..., latest_version, release['body'])
         for asset in release['assets']:
             if asset['name'].endswith('.exe'):  # download .exe file
                 download_url = asset['browser_download_url']
                 download_release(download_url, os.path.join(download_path, asset['name']))
-                yield (True, latest_version)
+                yield (True, latest_version, release['body'])
     yield (False, latest_version)
 
 # Usage
@@ -78,12 +78,21 @@ if __name__ =="__main__":
     user = "denizsincar29"
     repo = "schedule"
     current_version = "2024.04.08"
+    user="yt-dlp"  # overwrite to test
+    repo="yt-dlp"
+    current_version="2024.04.08"
     download_path="."
-    for status, latest_version in check_and_update(user, repo, current_version, download_path):
+    download_path="c:/users/user/files/yt-dlp/"  # overwrite to test
+    for status, latest_version, body in check_and_update(user, repo, current_version, download_path):
         if status is ...:
-            print(f"Checking for updates for {repo}...")  # here you can ask do you want to update or not. If not, just break and don't run the rest of the code
+            print(f"Update available: {latest_version} Do you want to download?\n{body}")
+            try:
+                input("Press Enter to continue or Ctrl+C to cancel")
+            except (KeyboardInterrupt, EOFError):
+                print("Update cancelled")
+                break  # we don't want to proceed running the code after yielding this value
         elif status:
-            print(f"Updated to {latest_version}")
+            print(f"Updated to {latest_version}:\n{body}")
         else:
             if latest_version=="0.0.0":  # normally used for debugging
                 print(f"No release found for {repo}")

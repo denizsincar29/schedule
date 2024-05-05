@@ -59,7 +59,7 @@ def inputwhile_ctrlc(prompt: str, callback: callable, *args, **kwargs):
     while True:
         try:
             callback(input(prompt), *args, **kwargs)
-        except KeyboardInterrupt | EOFError:  # sometimes ctrl+c raises EOFError for some reason
+        except (KeyboardInterrupt, EOFError):  # sometimes ctrl+c raises EOFError for some reason
             break
         except ContinueLoop as e:
             print(e)

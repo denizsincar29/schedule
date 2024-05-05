@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['schedule.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
     datas=[],
