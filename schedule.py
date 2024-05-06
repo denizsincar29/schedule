@@ -130,6 +130,7 @@ class Schedule:
         end_time = start_time + relativedelta(months=1) - timedelta(days=1)
         schedjson=self.get_schedule(person_id, start_time, end_time)
         schedjson={"person": person_id, "start_time": start_time.isoformat(), "schedule": schedjson}
+        if not os.path.exists("cache"): os.mkdir("cache")
         # if file for this month exists, return get_diffs_for_month(old, new)  # not implemented yet
         diff=[]
         if os.path.exists(f"cache/{start_time.month}.{person_id}.json"):
