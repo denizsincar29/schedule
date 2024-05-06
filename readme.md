@@ -4,12 +4,12 @@ This program is designed to view the schedule of students, teachers and other pe
 It supports searching for people, viewing the schedule for today, for a specific day, and the intersection of the schedule with another person.
 It uses an unofficial API of the site modeus.org. It does not store user data, except for the cache to speed up the work. The cache can be safely opened, read and deleted, as they are jsons.
 # installation
-'''bash
+```bash
 git clone https://github.com/denizsincar29/narfu_schedule
 cd narfu_schedule
 pip install -r requirements.txt
 python schedule.py
-'''
+```
 
 # first run
 At the first run, the program will ask for your email and password from modeus.org. The credentials will be dotenved automatically.
