@@ -75,6 +75,7 @@ def command(cmd):  # inputwhile callback
     elif cmd.startswith("reset"):
         s.friend=None
         print("Всё, ты прекратил следить за другим человеком. Теперь ты снова один!")
+        return
     elif cmd.startswith("help"):
         print(f"Schedule {VERSION} by Дениз Синджар")
         print("Программа для просмотра расписания студентов, преподавателей и прочих людей в САФУ.")

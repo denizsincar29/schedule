@@ -1,9 +1,9 @@
-/.json
+*.json
 schedule.txt
-/.log
+*.log
 cache/
 .env
-/.bat
+*.bat
 *.pyc
 build/
 dist/

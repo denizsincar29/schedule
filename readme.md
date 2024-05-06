@@ -4,12 +4,13 @@ This program is designed to view the schedule of students, teachers and other pe
 It supports searching for people, viewing the schedule for today, for a specific day, and the intersection of the schedule with another person.
 It uses an unofficial API of the site modeus.org. It does not store user data, except for the cache to speed up the work. The cache can be safely opened, read and deleted, as they are jsons.
 # installation
-'''
+'''bash
 git clone https://github.com/denizsincar29/narfu_schedule
 cd narfu_schedule
 pip install -r requirements.txt
 python schedule.py
 '''
+
 # first run
 At the first run, the program will ask for your email and password from modeus.org. The credentials will be dotenved automatically.
 Modeus is designed so that even with your login, you can find out the schedule of anyone in the university, so the program will ask and save your full name. More in local readmes.
@@ -18,7 +19,7 @@ webview client is planned to be added in the future. For now, the program is mad
 # commands
 - `today` - schedule for today
 - `dd/mm/yyyy` - schedule for a specific day.  
-you can omit the year or month/year, then they will be taken from the current date. You can enter only the day, only the month, or day/month.
+you can omit the year or month/year, then they will be taken from the current date. You can enter only the day, day/month without the year, or day/month.
 to get the intersection of the schedule with another person, add together to the command.  
 For example:
 `today together`,

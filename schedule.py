@@ -231,7 +231,7 @@ class Schedule:
         # this function must be used for getting schedule because it caches it, only use get_schedule for getting from server or you need to get overlapping events
 
         if start_time is None: start_time=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
-        if end_time is None: end_time=start_time+timedelta(days=1)
+        if end_time is None: end_time=start_time+timedelta(days=1, seconds=-1)  # end of the day
         # search in cache first, if not found, get from server
         if overlap_id!="":  # if overlap_id is given, get overlapping events
             sch=self.get_schedule(person_id, start_time, end_time, overlap_id)
