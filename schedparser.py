@@ -398,7 +398,5 @@ def human_diff(diff, date=None, delta=None, ifnodiff=False):
                     msg+=f"Изменена аудитория на {event['room_name']}\n"
                 elif field=="address":
                     msg+=f"Изменен адрес аудитории на {event['address']}\n"
-                #elif field=="status":  # there is no need to show status change.
-    print("debug: ", msg)
     return msg
 
