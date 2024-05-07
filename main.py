@@ -9,7 +9,7 @@ from sys import exit  # pyinstaller can't find it in some cases
 
 from inputval import inputwhile, input_int, inputwhile_ctrlc, ContinueLoop
 import re
-VERSION="1.0.0-alpha1"  # this is beta1, but we need to test the autoupdate feature, so we will set it to alpha1 to trigger the update to update to the beta1 (actually the same xD)
+VERSION="1.0.0-beta2"
 
 # compile regex for date with possible omitting of month or year
 regex=re.compile(r"^((?:\d{1,2}))(?:/((?:\d{1,2}))(?:/((?:\d{4}|\d{2})))?)?(?: +((?:together)))?$")

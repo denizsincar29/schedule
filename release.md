@@ -6,3 +6,4 @@ This is a major beta release. This release has a lot of changes and improovement
 - added command "txt" to save the last output to a text file. The file will be saved in the same directory as the program.
 - added commands "thisweek" and "nextweek" to get the schedule for the current week and the next week.
 - now, output includes the schedule date and name of the person who's schedule is being shown.
+- implemented the auto-update feature. The program will now check for updates on launch and will notify you if there is a new version available.
