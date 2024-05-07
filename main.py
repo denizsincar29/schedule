@@ -1,8 +1,10 @@
 from schedule import Schedule
 import schedparser
+from autoupdate.update import check_and_update
 from datetime import datetime
 from pytz import timezone
 import os
+import dotenv
 from sys import exit  # pyinstaller can't find it in some cases
 
 from inputval import inputwhile, input_int, inputwhile_ctrlc, ContinueLoop
@@ -111,8 +113,21 @@ def command(cmd):  # inputwhile callback
     raise ContinueLoop("Неизвестная команда!")  # raise exception to continue loop
 
 
-import os
-import dotenv
+# main code bookmark
+for status, latest_version, body in check_and_update("denizsincar29", "schedule", VERSION, "."):
+    if status is ...:
+        print(f"Доступно обновление: {latest_version} Хотите скачать?\n{body}")
+        try:
+            input("Нажмите Enter, чтобы продолжить или Ctrl+C, чтобы отменить")
+        except (KeyboardInterrupt, EOFError):
+            print("Обновление отменено")
+            break  # we don't want to proceed running the code after yielding this value
+    elif status:
+        print(f"Обновлено до {latest_version}:\n{body}")
+    else:
+        print(f"Уже обновлено до {latest_version}")
+        break
+
 dotenv.load_dotenv(".env")
 print("Программа для просмотра расписания студентов, преподавателей и прочих людей в САФУ.")
 print(f"Автор: Дениз Синджар <deniz@r1oaz.ru> 2024, версия {VERSION}")

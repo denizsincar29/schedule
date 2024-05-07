@@ -1,5 +1,6 @@
 import httpx
 import os
+import sys
 from packaging import version
 import tqdm
 
@@ -46,6 +47,10 @@ def download_release(url, path):
             f.write(chunk)
 
 def check_and_update(user, repo, current_version, download_path):
+    # if not pyinstalled, we will not update
+    if not hasattr(sys, 'frozen'):
+        print("Not pyinstalled, skipping update check")
+        return
     """
     Checks for updates in the specified GitHub repository and downloads the latest release if available.
 
@@ -77,12 +82,8 @@ def check_and_update(user, repo, current_version, download_path):
 if __name__ =="__main__":
     user = "denizsincar29"
     repo = "schedule"
-    current_version = "2024.04.08"
-    user="yt-dlp"  # overwrite to test
-    repo="yt-dlp"
-    current_version="2024.04.08"
     download_path="."
-    download_path="c:/users/user/files/yt-dlp/"  # overwrite to test
+    current_version="1.0.0"
     for status, latest_version, body in check_and_update(user, repo, current_version, download_path):
         if status is ...:
             print(f"Update available: {latest_version} Do you want to download?\n{body}")
