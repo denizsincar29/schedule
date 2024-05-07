@@ -97,7 +97,7 @@ def command(cmd):  # inputwhile callback
 
 import os
 import dotenv
-dotenv.load_dotenv()
+dotenv.load_dotenv(".env")
 print("Программа для просмотра расписания студентов, преподавателей и прочих людей в САФУ.")
 print(f"Автор: Дениз Синджар <deniz@r1oaz.ru> 2024, версия {VERSION}")
 print("Введите help для справки, когда вы попадёте в консоль программы.")
