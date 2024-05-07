@@ -250,7 +250,7 @@ class Schedule:
 
 
     def get_schedule_str(self, person_id: str, start_time=None, end_time=None, overlap_id: str="") -> str:
-        if overlap_id is not None:
+        if overlap_id !="":
             self.last_msg = f"Общее расписания пользователя {self.get_person_by_id(person_id)['name']} и {self.get_person_by_id(overlap_id)['name']}:\n"
         else:
             self.last_msg=f"Расписание пользователя {self.get_person_by_id(person_id)["name"]}:\n"
