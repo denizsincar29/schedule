@@ -11,6 +11,10 @@ VERSION="1.0"
 
 # compile regex for date with possible omitting of month or year
 regex=re.compile(r"^((?:\d{1,2}))(?:/((?:\d{1,2}))(?:/((?:\d{4}|\d{2})))?)?(?: +((?:together)))?$")
+
+
+
+
 def search_person_cb(fio, itsme=True):
     s.search_person(fio, False)
     results=s.results
@@ -33,6 +37,15 @@ def search_person_cb(fio, itsme=True):
     print(s.humanize_person_info(whos))
 
 def command(cmd):  # inputwhile callback
+    cmd=cmd.lower()
+    whos=s.current_person if s.friend is None else s.friend  # if not together, then not overlap but just friend.
+    overlap=""
+    if "together" in cmd:
+        if s.friend is None:
+            print("Сначала выбери человека, с которым хочешь посмотреть расписание! Используй friend или search.")
+            return  # really we don't need to proceed!
+        overlap=s.friend
+        whos=s.current_person  # if together, then we are looking at current person's schedule
     if cmd=="exit" or cmd=="" or cmd=="quit":  # or just press enter
         print("Выход")
         exit()
@@ -43,38 +56,41 @@ def command(cmd):  # inputwhile callback
         inputwhile("Как зовут? ->", search_person_cb, False)
         return
     if cmd.startswith("today"):
-        if "together" in cmd:
-            if s.friend is None:
-                print("Сначала выбери человека, с которым хочешь посмотреть расписание! Используй friend или search.")
-                return
-            print(s.get_schedule_str(s.current_person, datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0), overlap_id=s.friend))
-            return
-        whos=s.current_person if s.friend is None else s.friend  # if not together, then not overlap but just friend.
-        if s.friend is not None:
-            print("Смотрим чужое расписание!")
-        print(s.get_schedule_str(whos, datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)))
+        print(s.get_schedule_str(whos, datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0), overlap_id=overlap))
         return
-    if regex.match(cmd):
+    if regex.match(cmd):  # if matches date
         c=regex.match(cmd).groups()
         start_time=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
         # do as deprecated lines but with this groups. Length of c is always 4, so we don't need to check
         if c[0] is not None: start_time=start_time.replace(day=int(c[0]))
         if c[1] is not None: start_time=start_time.replace(month=int(c[1]))
         if c[2] is not None: start_time=start_time.replace(year=int(c[2]))
-        if c[3] is not None:  # if together is given, get overlapping events
-            if s.friend is None:
-                print("Сначала выбери человека, с которым хочешь посмотреть расписание! Используй friend или search.")
-                return
-            print(s.get_schedule_str(s.current_person, start_time, overlap_id=s.friend))
-            return
-        whos=s.current_person if s.friend is None else s.friend  # if not together, then not overlap but just friend.
-        if s.friend is not None:
-            print("Смотрим чужое расписание!")
-        print(s.get_schedule_str(whos, start_time))
+        print(s.get_schedule_str(whos, start_time, overlap_id=overlap))
         return
     elif cmd.startswith("reset"):
         s.friend=None
         print("Всё, ты прекратил следить за другим человеком. Теперь ты снова один!")
+        return
+    elif cmd.startswith("txt"):
+        with open("schedule.txt", "w", encoding="UTF-8") as f:
+            f.write(s.last_msg)
+        print("Сохранил расписание в файл schedule.txt")
+        return
+    elif cmd.startswith("thisweek"):
+        # set start_time to the beginning of the week and end_time to the end of the week
+        now=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
+        wd=now.weekday()
+        monday=now.replace(day=now.day-wd)
+        sunday=monday.replace(day=monday.day+6)
+        print(s.get_schedule_str(s.current_person, monday, sunday, overlap_id=overlap))
+        return
+    elif cmd.startswith("nextweek"):
+        # set start_time to the beginning of the week and end_time to the end of the week
+        now=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
+        wd=now.weekday()
+        monday=now.replace(day=now.day-wd+7)
+        sunday=monday.replace(day=monday.day+6)
+        print(s.get_schedule_str(s.current_person, monday, sunday, overlap_id=overlap))
         return
     elif cmd.startswith("help"):
         print(f"Schedule {VERSION} by Дениз Синджар")

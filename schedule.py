@@ -45,6 +45,7 @@ class Schedule:
         self.current_person=None
         self.friend=None
         self.last_events=[]
+        self.last_msg=""
         self.config=Config()
         self.check_token()
 
@@ -115,7 +116,7 @@ class Schedule:
         if start_time is None: start_time=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
         if end_time is None: end_time=start_time+timedelta(days=1)
         g=schedparser.parse_bigjson(get_schedule(person_id, self.token, start_time, end_time))
-        if overlap_id!="" and "events" in g["_embedded"]:
+        if overlap_id!="":
             h=schedparser.parse_bigjson(get_schedule(overlap_id, self.token, start_time, end_time))
             # parsed to prepared data, lets get overlapping events
             return list(set(g).intersection(h))
@@ -224,6 +225,10 @@ class Schedule:
         self.check_token()
         return who_goes(event_id, self.token)
 
+    def get_person_by_id(self, person_id: str) -> dict:
+        self.load_people()
+        return schedparser.get_person_by_id(person_id, self.people)
+
     def humanize_person(self, person_id: str, data: str) -> dict:
         self.check_token()
         return  schedparser.humanize_person(person_id, data)
@@ -245,8 +250,12 @@ class Schedule:
 
 
     def get_schedule_str(self, person_id: str, start_time=None, end_time=None, overlap_id: str="") -> str:
-        # overlap_id is the id of another person to check for overlapping events
-        return schedparser.humanize_events(self.schedule(person_id, start_time, end_time, overlap_id))
+        if overlap_id is not None:
+            self.last_msg = f"Общее расписания пользователя {self.get_person_by_id(person_id)['name']} и {self.get_person_by_id(overlap_id)['name']}:\n"
+        else:
+            self.last_msg=f"Расписание пользователя {self.get_person_by_id(person_id)["name"]}:\n"
+        self.last_msg+=schedparser.humanize_events(self.schedule(person_id, start_time, end_time, overlap_id))
+        return self.last_msg
 
 
 

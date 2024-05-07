@@ -192,8 +192,8 @@ def humanize_events(events, laconic=False):
     # parsing from the prepared data
     if len(events) == 0:
         return MSGS['no_events'][laconic]
-    msg=""
     multi=len(multiday(events))>1
+    msg="" if not multi else events[0]['date'].strftime('%d/%m')+":\n"
     # if day changes or first event in multiday, msg+=date, but separated by \n\n
     prevdate=None
     for event in events:
@@ -203,7 +203,7 @@ def humanize_events(events, laconic=False):
             elif prevdate!=event['date']:
                 msg+='\n\n'
                 prevdate=event['date']
-            msg+=f"{datetime.fromisoformat(event['date']).strftime('%d/%m')}: "
+                msg+=f"{datetime.fromisoformat(event['date']).strftime('%d/%m')}: "
         msg+=humanize_event_id(event['id'], events, laconic)+'\n'
     return msg
 
