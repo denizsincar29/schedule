@@ -2,15 +2,17 @@ import httpx
 import os
 import sys
 from packaging import version
+from subprocess import Popen
 import tqdm
 
-def get_latest_release(user, repo):
+def get_latest_release(user, repo, prerelease=False):
     """
     Retrieves the latest release information for a given GitHub repository.
 
     Args:
         user (str): The username or organization name of the repository owner.
         repo (str): The name of the repository.
+        prerelease (bool): Whether to include prereleases in the results (default is False).
 
     Returns:
         dict: A dictionary containing the JSON response of the latest release.
@@ -19,11 +21,16 @@ def get_latest_release(user, repo):
         httpx.HTTPError: If the HTTP request to the GitHub API fails or returns an error.
 
     """
-    url = f"https://api.github.com/repos/{user}/{repo}/releases/latest"
+    url = f"https://api.github.com/repos/{user}/{repo}/releases"  # very strange, but trailing slash breaks the request
+    if not prerelease:
+        url += "/latest"
     with httpx.Client() as client:
         response = client.get(url)
     response.raise_for_status()
-    return response.json()
+    j=response.json()
+    if prerelease:
+        return j[0] # return the first release if prerelease is True
+    return j
 
 def download_release(url, path):
     """
@@ -46,11 +53,7 @@ def download_release(url, path):
         for chunk in tqdm.tqdm(response.iter_bytes(), desc="Downloading", unit="B", unit_scale=True, total=total):
             f.write(chunk)
 
-def check_and_update(user, repo, current_version, download_path):
-    # if not pyinstalled, we will not update
-    if not hasattr(sys, 'frozen'):
-        print("Not pyinstalled, skipping update check")
-        return
+def check_and_update(user, repo, current_version, download_path, prerelease=False):
     """
     Checks for updates in the specified GitHub repository and downloads the latest release if available.
 
@@ -59,42 +62,50 @@ def check_and_update(user, repo, current_version, download_path):
         repo (str): The name of the GitHub repository.
         current_version (str): The current version of the software.
         download_path (str): The path where the downloaded release file will be saved.
+        prerelease (bool): Whether to include prereleases in the results (default is False).
 
     Yields:
         tuple: A tuple containing a boolean value indicating whether an update is available, the latest version number, and what's new or empty string.
 
     """
-    release = get_latest_release(user, repo)
+    # if not pyinstalled, we will not update
+    if not hasattr(sys, 'frozen'):
+        return
+    os.remove("restart.bat")  # remove the restart.bat file if it exists
+    new_exe=os.path.splitext(download_path)[0]+".new"+os.path.splitext(download_path)[1]
+    release = get_latest_release(user, repo, prerelease)
     latest_version = release['tag_name']
     # if no release is found, return False
     if not latest_version:
         yield (False, "0.0.0", "no release found")
     if version.parse(latest_version) > version.parse(current_version):
         yield (..., latest_version, release['body'])
+        download_filename=os.path.basename(download_path)
         for asset in release['assets']:
-            if asset['name'].endswith('.exe'):  # download .exe file
+            if asset['name']==download_filename:
                 download_url = asset['browser_download_url']
-                download_release(download_url, os.path.join(download_path, asset['name']))
+                # .exe to .new.exe
+                download_release(download_url, new_exe)
                 yield (True, latest_version, release['body'])
-    yield (False, latest_version)
+                return
+    yield (False, latest_version, "no update available")
 
-# Usage
-if __name__ =="__main__":
-    user = "denizsincar29"
-    repo = "schedule"
-    download_path="."
-    current_version="1.0.0"
-    for status, latest_version, body in check_and_update(user, repo, current_version, download_path):
-        if status is ...:
-            print(f"Update available: {latest_version} Do you want to download?\n{body}")
-            try:
-                input("Press Enter to continue or Ctrl+C to cancel")
-            except (KeyboardInterrupt, EOFError):
-                print("Update cancelled")
-                break  # we don't want to proceed running the code after yielding this value
-        elif status:
-            print(f"Updated to {latest_version}:\n{body}")
-        else:
-            if latest_version=="0.0.0":  # normally used for debugging
-                print(f"No release found for {repo}")
-            print(f"Already up-to-date at {latest_version}")
+def restart():
+    """
+    Restarts the current program.
+    Note: This function does not return. Any cleanup action (like saving data) must be done before calling this function.
+    """
+    # make up a bat file that will delete the x.exe and rename x.new.exe to x.exe than run x
+    new_exe=os.path.splitext(sys.argv[0])[0]+".new"+os.path.splitext(sys.argv[0])[1]
+    bat=f"""@echo off
+timeout /t 1 /nobreak >nul
+del "{sys.argv[0]}"
+ren "{new_exe}" "{os.path.basename(sys.argv[0])}"
+start "" "{sys.argv[0]}"
+"""
+    with open("restart.bat", "w", encoding="utf-8") as f:
+        f.write(bat)
+    # popen in background to exit before the bat file is executed
+    Popen("restart.bat", shell=True)
+    print("exitting")  # debug
+    sys.exit()

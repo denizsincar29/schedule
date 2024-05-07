@@ -1,6 +1,6 @@
 from schedule import Schedule
 import schedparser
-from autoupdate.update import check_and_update
+from autoupdate.update import check_and_update, restart
 from datetime import datetime
 from pytz import timezone
 import os
@@ -9,7 +9,7 @@ from sys import exit  # pyinstaller can't find it in some cases
 
 from inputval import inputwhile, input_int, inputwhile_ctrlc, ContinueLoop
 import re
-VERSION="1.0"
+VERSION="1.0.0-alpha1"  # this is beta1, but we need to test the autoupdate feature, so we will set it to alpha1 to trigger the update to update to the beta1 (actually the same xD)
 
 # compile regex for date with possible omitting of month or year
 regex=re.compile(r"^((?:\d{1,2}))(?:/((?:\d{1,2}))(?:/((?:\d{4}|\d{2})))?)?(?: +((?:together)))?$")
@@ -114,7 +114,7 @@ def command(cmd):  # inputwhile callback
 
 
 # main code bookmark
-for status, latest_version, body in check_and_update("denizsincar29", "schedule", VERSION, "."):
+for status, latest_version, body in check_and_update("denizsincar29", "schedule", VERSION, "./schedule.exe", True):
     if status is ...:
         print(f"Доступно обновление: {latest_version} Хотите скачать?\n{body}")
         try:
@@ -123,7 +123,10 @@ for status, latest_version, body in check_and_update("denizsincar29", "schedule"
             print("Обновление отменено")
             break  # we don't want to proceed running the code after yielding this value
     elif status:
-        print(f"Обновлено до {latest_version}:\n{body}")
+        print(f"Обновлено до {latest_version}. Перезапустите программу")
+        input("Нажмите Enter, чтобы закрыть программу. Запустите программу снова.")
+        # restart the program
+        restart()
     else:
         print(f"Уже обновлено до {latest_version}")
         break
