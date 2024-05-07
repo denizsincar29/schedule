@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Расписание в САФУ</title>
+  </head>
+  <body>
+    <h1>{user}</h1>
+    pick the date in the date picker and the schedule will be shown lower instantly.
+    <input type="date" id="date" name="date">
+    <script>
+document.getElementById('date').addEventListener('change', function() {
+    var date = this.value;
+    // send to pywebview
+    window.pywebview.api.send(date);
+});
+    </script>
+  </body>
+</html>
