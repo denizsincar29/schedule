@@ -71,7 +71,8 @@ def check_and_update(user, repo, current_version, download_path, prerelease=Fals
     # if not pyinstalled, we will not update
     if not hasattr(sys, 'frozen'):
         return
-    os.remove("restart.bat")  # remove the restart.bat file if it exists
+    try: os.remove("restart.bat")  # remove the restart.bat file if it exists
+    except FileNotFoundError: pass
     new_exe=os.path.splitext(download_path)[0]+".new"+os.path.splitext(download_path)[1]
     release = get_latest_release(user, repo, prerelease)
     latest_version = release['tag_name']
