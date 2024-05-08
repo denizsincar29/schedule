@@ -3,7 +3,7 @@ from dateutil.relativedelta import relativedelta
 import json
 import os
 from copy import deepcopy  # prevent a huge expensive error that I would spend hours to debug!
-from modeus import modeus_parse_token, get_schedule, search_person, who_goes
+from modeus import modeus_parse_token, get_schedule, search_person, who_goes, modeus_auth
 
 from pytz import timezone
 import schedparser
@@ -250,7 +250,7 @@ class Schedule:
 
 
     def get_schedule_str(self, person_id: str, start_time=None, end_time=None, overlap_id: str="") -> str:
-        if overlap_id !="":
+        if overlap_id !="" and overlap_id is not None:
             self.last_msg = f"Общее расписания пользователя {self.get_person_by_id(person_id)['name']} и {self.get_person_by_id(overlap_id)['name']}:\n"
         else:
             self.last_msg=f"Расписание пользователя {self.get_person_by_id(person_id)["name"]}:\n"
@@ -259,4 +259,5 @@ class Schedule:
 
 
 
-# main function inside the main.py
+def auth(email, password):
+    return modeus_auth(email, password)

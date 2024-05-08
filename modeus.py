@@ -15,7 +15,6 @@ def modeus_parse_token(email: str, password: str) -> str:
         }
         url = "https://narfu-auth.modeus.org/oauth2/authorize"
         before_form1_response = client.get(url, params=params)
-        #with open("raw.txt", "w", encoding="UTF-8") as f: f.write(str(before_form1_response))
         cookies = httpx.Cookies()
         cookies.set(
             'tc01', before_form1_response.cookies['tc01']
@@ -51,6 +50,47 @@ def modeus_parse_token(email: str, password: str) -> str:
             raise RuntimeError("modeus_parse_token: can't parse id_token")
         id_token = id_token_match.group(1)
         return id_token
+
+def modeus_auth(email: str, password: str) -> bool:
+        # copy-paste from modeus_parse_token until can't parse 2nd form. If parsed, return True
+    with httpx.Client(timeout=10) as client:
+        params = {
+            "client_id":"YDNCeCPsf1zL2etGQflijyfzo88a",
+            "redirect_uri":"https://narfu.modeus.org/",
+            "response_type":"id_token",
+            "scope":"openid",
+            "state":"abab35fcb9164912aa46d287a594a338",
+            "nonce":"08cd3a21e9724040acb48cf3a35b0c4b"
+        }
+        url = "https://narfu-auth.modeus.org/oauth2/authorize"
+        before_form1_response = client.get(url, params=params)
+        cookies = httpx.Cookies()
+        cookies.set(
+            'tc01', before_form1_response.cookies['tc01']
+        )
+        form1_response = client.get(
+            before_form1_response.next_request.url,
+            cookies=cookies
+        )
+        form1 = form1_response.text
+        form1_url_match = re.search(r'<form.*action="(https:.+)".*>', form1)
+        if not form1_url_match:
+            raise RuntimeError("modeus_auth: can't parse 1st form")
+        form1_url = form1_url_match.group(1)
+        data = {
+            "UserName":email,
+            "Password":password,
+            "AuthMethod":"FormsAuthentication"
+        }
+        form2_response = client.post(
+            form1_url, data=data, cookies=httpx.Cookies(), follow_redirects=True,
+            headers=dict(Referer=str(form1_response.url))
+        )
+        form2 = form2_response.text
+        form2_matches = re.findall(r'<input type="hidden" name="(.+?)" value="(.+?)" \/>', form2)
+        if len(form2_matches) < 2:
+            return False
+        return True
 
 
 def get_schedule(person_id: str, modeus_token: str, start_time: datetime, end_time: datetime) -> dict:
