@@ -168,6 +168,10 @@ class MainWindow(wx.Frame):
                     #we ask for name
                     if self.app.person is None:
                         self.ask_fullname()
+                    else:
+                        self.authed=True
+                        self.SetStatusText("Получение расписания...")
+                        self.schedule()
                 elif reply[1]==... or reply[1]==False:  #noqa
                     if reply[1]==False:
                         self.show_error("Неверный email или пароль.")

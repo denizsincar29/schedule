@@ -60,6 +60,7 @@ class App(Thread):
                     f.write(f"MODEUS_EMAIL={email}\nMODEUS_PASSWORD={password}\n")
 
             self.schedule=Schedule(email, password)
+            self.schedule.load_people()
             self.person=self.schedule.current_person
         return authed
 
