@@ -253,7 +253,7 @@ class Schedule:
         if overlap_id !="" and overlap_id is not None:
             self.last_msg = f"Общее расписания пользователя {self.get_person_by_id(person_id)['name']} и {self.get_person_by_id(overlap_id)['name']}:\n"
         else:
-            self.last_msg=f"Расписание пользователя {self.get_person_by_id(person_id)["name"]}:\n"
+            self.last_msg=f"Расписание пользователя {self.get_person_by_id(person_id)['name']}:\n"
         self.last_msg+=schedparser.humanize_events(self.schedule(person_id, start_time, end_time, overlap_id))
         return self.last_msg
 

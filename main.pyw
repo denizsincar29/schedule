@@ -3,6 +3,7 @@
 
 import dotenv # for email and password
 import wx
+from threading import Thread
 from guinput import GUInput, ChooseFromList, AuthInput
 from datetime import datetime
 from calendar import isleap
@@ -39,9 +40,8 @@ class MainWindow(wx.Frame):
         # command checker runs over and over again by wx timer
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.reply_checker, self.timer)
-        self.timer.Start(10) # run the reply checker every 10 ms
-
-
+        self.timer.Start(milliseconds = 750, oneShot = True)  # run the reply checker every 750 ms
+        print("timer started")
 
     def custom_date_picker(self):
         # the default date picker is not screen reader friendly. We make a custom that allows to tab navigate through the window.
@@ -127,6 +127,7 @@ class MainWindow(wx.Frame):
 
     def OnSaveToTxt(self, event):
         # save to schedule.txt
+        event.Skip()
         with open("schedule.txt", "w") as f:
             f.write(self.control.GetValue())
         self.SetStatusText("Расписание сохранено в schedule.txt")
@@ -134,6 +135,7 @@ class MainWindow(wx.Frame):
 
     def OnDateChanged(self, event):
         # get the schedule
+        event.Skip()
         if self.authed:
             self.schedule()
         event.Skip()
@@ -150,7 +152,8 @@ class MainWindow(wx.Frame):
         self.app.send_command(["schedule", date, None, None]) # end date and overlap are None
         # that's all. This function ends here. The schedule will be displayed in the control when the app thread finishes the command.
 
-    def reply_checker(self, *args): # now commands are tuples, so we can use tuple match command[0]
+    def reply_checker(self, event, *args): # now commands are tuples, so we can use tuple match command[0]
+        event.Skip()
         # if i will get headaches from this, the credential checker will return quickly and if it is not authed, it will ask for credentials again.
         if not self.app.has_reply:
             return
@@ -228,7 +231,8 @@ class MainWindow(wx.Frame):
         if exit:
             self.exit()
 
-    def exit(self, event=None):  # we don't need the event
+    def exit(self, event=None):
+        if event: event.Skip()
         self.SetStatusText("Выход...")
         self.SetTitle("Выход...")
         self.app.send_command(["exit"])
