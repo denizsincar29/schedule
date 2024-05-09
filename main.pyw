@@ -2,7 +2,6 @@
 # WXPython
 
 import wx
-from threading import Thread
 from guinput import GUInput, ChooseFromList, AuthInput
 from datetime import datetime
 from pytz import timezone
@@ -15,7 +14,7 @@ months=["Январь", "Февраль", "Март", "Апрель", "Май", 
 class MainWindow(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, parent=None, title="Расписание САФУ", size=(800, 600), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
-        self.app=App()  # start app thread before anything else to not wait.
+        self.app=App(self.check_auth_cb)
         self.person=None
         self.authed=False
         # panel
@@ -36,11 +35,6 @@ class MainWindow(wx.Frame):
         self.Centre()
         self.Show(True)
         self.SetStatusText("Авторизация...")
-        # command checker runs over and over again by wx timer
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.reply_checker, self.timer)
-        self.timer.Start(milliseconds = 750, oneShot = True)  # run the reply checker every 750 ms
-        print("timer started")
 
     def custom_date_picker(self):
         # the default date picker is not screen reader friendly. We make a custom that allows to tab navigate through the window.
@@ -74,7 +68,6 @@ class MainWindow(wx.Frame):
         year = date.year
         month = date.month
         day = date.day
-        root = self.date_picker.GetRootItem()
         year_item = self.get_year_item(year)
         if year_item is None:
             return
@@ -148,50 +141,39 @@ class MainWindow(wx.Frame):
             return
         self.SetStatusText("Получение расписания...")
         self.control.SetValue("Получение расписания...")
-        self.app.send_command(["schedule", date, None, None]) # end date and overlap are None
+        self.app.send_command(["schedule", date, None, None], self.schedule_cb)
         # that's all. This function ends here. The schedule will be displayed in the control when the app thread finishes the command.
 
-    def reply_checker(self, event, *args):
-        self.handle_replies()
-        event.Skip()
-        self.timer.Start(milliseconds = 750, oneShot = True)  # run the reply checker every 750 ms
-
-    def handle_replies(self):
-        if not self.app.has_reply:
-            return
-        reply = self.app.get_reply()
-        match reply[0]:
-            case "Unknown":
-                self.show_error("Ошибка. Поток приложения плетёт всякую чушь. Отправьте разработчику.", True)
-            case "creds":
-                if reply[1]==True:  #noqa
-                    #we ask for name
-                    if self.app.person is None:
-                        self.ask_fullname()
-                    else:
-                        self.authed=True
-                        self.SetStatusText("Получение расписания...")
-                        self.schedule()
-                elif reply[1]==... or reply[1]==False:  #noqa
-                    if reply[1]==False:
-                        self.show_error("Неверный email или пароль.")
-                    self.ask_emailnpassword()
-
-
-            case "search":
-                print("search!", reply)
-                result=self.choose_from_results(reply[1])
-                if result is None:
-                    self.show_error("Ничего не найдено или не выбрано.")
-                    self.ask_fullname()
-                    return
-                self.app.send_command(["saveperson", result])
+    def check_auth_cb(self, state):
+        if state==True:  #noqa
+            #we ask for name
+            if self.app.person is None:
+                self.ask_fullname()
+            else:
                 self.authed=True
                 self.SetStatusText("Получение расписания...")
                 self.schedule()
-            case "schedule":
-                self.control.SetValue(reply[1])
-                self.SetStatusText("Расписание получено.")
+        elif state==... or state==False:  #noqa
+            if state==False:
+                self.show_error("Неверный email или пароль.")
+            self.ask_emailnpassword()
+
+    def search_cb(self, results):
+        result=self.choose_from_results(results)
+        if result is None:
+            self.show_error("Ничего не найдено или не выбрано.")
+            self.ask_fullname()
+            return
+        self.app.send_command(["saveperson", result])
+        self.authed=True
+        self.SetStatusText("Получение расписания...")
+        self.schedule()
+
+    def schedule_cb(self, schedule):
+        self.control.SetValue(schedule)
+        self.SetStatusText("Расписание получено.")
+
+
 
 
 
