@@ -152,9 +152,13 @@ class MainWindow(wx.Frame):
         self.app.send_command(["schedule", date, None, None]) # end date and overlap are None
         # that's all. This function ends here. The schedule will be displayed in the control when the app thread finishes the command.
 
-    def reply_checker(self, event, *args): # now commands are tuples, so we can use tuple match command[0]
+    def reply_checker(self, event, *args):
+        self.handle_replies()
+        event.skip()
+        self.timer.Start(milliseconds = 750, oneShot = True)  # run the reply checker every 750 ms
+
+    def handle_replies(self):
         if not self.app.has_reply:
-            event.skip()
             return
         reply = self.app.get_reply()
         match reply[0]:
@@ -176,7 +180,6 @@ class MainWindow(wx.Frame):
                 if result is None:
                     self.show_error("Ничего не найдено или не выбрано.")
                     self.ask_fullname()
-                    event.Skip()
                     return
                 self.app.send_command(["saveperson", result])
                 self.authed=True
@@ -185,7 +188,6 @@ class MainWindow(wx.Frame):
             case "schedule":
                 self.control.SetValue(reply[1])
                 self.SetStatusText("Расписание получено.")
-        event.Skip()
 
 
 
