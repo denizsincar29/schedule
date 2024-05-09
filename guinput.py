@@ -13,7 +13,6 @@ class GUInput(wx.Dialog):
         self.value=""
         self.InitUI()
         self.Centre()
-        self.ShowModal()
 
     def InitUI(self):
         panel = wx.Panel(self)
@@ -64,7 +63,6 @@ class ChooseFromList(wx.Dialog):
             self.bound = choices
         self.InitUI()
         self.Centre()
-        self.ShowModal()
 
     def InitUI(self):
         panel = wx.Panel(self)
@@ -110,7 +108,6 @@ class AuthInput(wx.Dialog):
         self.values = ("" , "")
         self.InitUI()
         self.Centre()
-        self.ShowModal()
 
     def InitUI(self):
         panel = wx.Panel(self)

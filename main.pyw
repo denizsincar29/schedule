@@ -197,7 +197,9 @@ class MainWindow(wx.Frame):
 
     def ask_fullname(self, itsme=False):
         with GUInput(self, "Введите ФИО") as guinput:
+            print("before showmodal")
             status=guinput.ShowModal() == wx.ID_OK
+            print("after showmodal")  # frost! not responding
             if status:
                 name=guinput.value
                 self.app.send_command(["fullname", name])
