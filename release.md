@@ -1,9 +1,2 @@
-# release 1.0-beta2
-This is a major beta release. This release has a lot of changes and improovements.
-## Changes
-- Fixed the schedule difference calculation, human readable outputter is now showing the correct difference. The timetable changes are now correctly shown on the program launch.
-- trying to fix the issue where the program gets schedule for one more extra day while you didn't ask for it. E.g. if you ask for 3 days, it will give you 4 days. Still investigating.
-- added command "txt" to save the last output to a text file. The file will be saved in the same directory as the program.
-- added commands "thisweek" and "nextweek" to get the schedule for the current week and the next week.
-- now, output includes the schedule date and name of the person who's schedule is being shown.
-- implemented the auto-update feature. The program will now check for updates on launch and will notify you if there is a new version available.
+# release 1.0-beta3
+Dear GUI lovers! We are happy to announce the release of the 1.0-beta3 version of our software. This release is mainly focused on making a GUI for the schedule client. The console client is still available for fellow console lovers. We hope you enjoy the new GUI and find it useful. Please report any bugs you find to our GitHub repository. Thank you for your support!

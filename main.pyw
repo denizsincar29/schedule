@@ -3,6 +3,7 @@
 
 import dotenv # for email and password
 import wx
+from guinput import GUInput, ChooseFromList, AuthInput
 from datetime import datetime
 from calendar import isleap
 from app_logic import App
@@ -186,45 +187,23 @@ class MainWindow(wx.Frame):
 
 
     def ask_emailnpassword(self):
-        # got headache from the reply checker. I will make a dialog to ask for email and password.
-        # 2 text boxes for email and password
-        # 1 button to submit
-        dlg = wx.Dialog(self, title="Авторизация")
-        panel = wx.Panel(dlg)
-        email_label = wx.StaticText(panel, label="Email:")
-        email_text = wx.TextCtrl(panel)
-        password_label = wx.StaticText(panel, label="Пароль:")
-        password_text = wx.TextCtrl(panel, style=wx.TE_PASSWORD)
-        submit_button = wx.Button(panel, label="Войти")
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(email_label, 0, wx.ALL, 5)
-        sizer.Add(email_text, 0, wx.ALL, 5)
-        sizer.Add(password_label, 0, wx.ALL, 5)
-        sizer.Add(password_text, 0, wx.ALL, 5)
-        sizer.Add(submit_button, 0, wx.ALL, 5)
-        panel.SetSizer(sizer)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.app.send_command(["check_credentials", email_text.GetValue(), password_text.GetValue(), False]) # check the credentials with no direct pass
-        else:
-            self.exit()  # user pressed cancel
-        dlg.Destroy()
-        return email_text.GetValue(), password_text.GetValue()
+        with AuthInput(self, "Введите email и пароль от модеуса") as authinput:
+            status=authinput.ShowModal() == wx.ID_OK
+            if status:
+                email, password=authinput.GetValues()
+                self.app.send_command(["check_credentials", email, password, False]) # check the credentials with no direct pass
+            else:
+                self.exit()  # user pressed cancel
 
-    def ask_fullname(self):
-        # a field to enter the full name and a button to submit
-        dlg = wx.Dialog(self, title="Поиск по ФИО")
-        panel = wx.Panel(dlg)
-        name_label = wx.StaticText(panel, label="ФИО:")
-        name_text = wx.TextCtrl(panel)
-        submit_button = wx.Button(panel, label="Найти")
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(name_label, 0, wx.ALL, 5)
-        sizer.Add(name_text, 0, wx.ALL, 5)
-        sizer.Add(submit_button, 0, wx.ALL, 5)
-        panel.SetSizer(sizer)
-        dlg.ShowModal()
-        dlg.Destroy()
-        self.app.send_command(["fullname", name_text.GetValue()])  # get the full name
+    def ask_fullname(self, itsme=False):
+        with GUInput(self, "Введите ФИО") as guinput:
+            status=guinput.ShowModal() == wx.ID_OK
+            if status:
+                name=guinput.value
+                self.app.send_command(["fullname", name])
+            else:
+                if itsme: # if asked for my name, exit. In the future it can ask for friend's name for getting their schedule.
+                    self.exit()
         self.SetStatusText("Поиск...")
 
     def choose_from_results(self, results):
@@ -234,21 +213,13 @@ class MainWindow(wx.Frame):
             return None
         elif len(results)==1:
             return results[0]  # dont need to ask the user
-        dlg=wx.Dialog(self, title="Выберите результат")
-        panel=wx.Panel(dlg)
-        listbox=wx.ListBox(panel, choices=[person["name"] for person in results])
-        ok_button=wx.Button(panel, label="OK")
-        sizer=wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(listbox, 0, wx.ALL, 5)
-        sizer.Add(ok_button, 0, wx.ALL, 5)
-        panel.SetSizer(sizer)
-        dlg.ShowModal()
-        dlg.Destroy()
-        # get selection is the index of the selected item
-        selection=listbox.GetSelection()
-        if selection==wx.NOT_FOUND:
+        
+        with ChooseFromList(self, "Выберите правильный вариант из списка", [person["name"] for person in results], results) as cfl:
+            status=cfl.ShowModal() == wx.ID_OK
+            selection=cfl.GetSelection()
+            if status:
+                return selection
             return None
-        return results[selection]
 
     def show_error(self, message, exit=False):
         wx.MessageBox(message, "Ошибка", wx.OK | wx.ICON_ERROR)
