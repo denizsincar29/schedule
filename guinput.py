@@ -37,22 +37,16 @@ class GUInput(wx.Dialog):
         vbox.Add(hbox2, flag=wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border=10)
         panel.SetSizer(vbox)
 
-    def proper_close(self):
-        if self.Parent is None:
-            self.Destroy()
-        else:
-            self.Close()
-
     def OnOk(self, e):
         print("debug! Everything is ID_OK")
         self.value=self.tc.GetValue()
         if self.value == "":
             return  # dont allow empty input. Only allow cancel
         self.status=True
-        self.proper_close()
+        self.Close()
         e.Skip()
     def OnClose(self, e):
-        self.proper_close()
+        self.Close()
         e.Skip()
 
 class ChooseFromList(wx.Dialog):
@@ -90,19 +84,13 @@ class ChooseFromList(wx.Dialog):
         vbox.Add(hbox2, flag=wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border=10)
         panel.SetSizer(vbox)
 
-    def proper_close(self):
-        if self.Parent is None:
-            self.Destroy()
-        else:
-            self.Close()
-
     def OnOk(self, e):
         self.value=self.bound[self.choice.GetSelection()]
         self.status=True
-        self.proper_close()
+        self.Close()
         e.Skip()
     def OnClose(self, e):
-        self.proper_close()
+        self.Close()
         e.Skip()
 
 
@@ -142,21 +130,15 @@ class AuthInput(wx.Dialog):
         vbox.Add(hbox3, flag=wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border=10)
         panel.SetSizer(vbox)
 
-    def proper_close(self):
-        if self.Parent is None:
-            self.Destroy()
-        else:
-            self.Close()
-
     def OnOk(self, e):
         self.values = self.GetValues()
         if self.values[0] == "" or self.values[1] == "":
             return
         self.status=True
-        self.proper_close()
+        self.Close()
         e.Skip()
     def OnClose(self, e):
-        self.proper_close()
+        self.Close()
         e.Skip()
 
     def GetValues(self):
