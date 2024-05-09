@@ -70,6 +70,8 @@ def parse_bigjson(data):
     # normally data is value of _embedded key, but if not, then set data=data["_embedded"]
     if "_embedded" in data:
         data = data["_embedded"]
+    if "events" not in data:
+        raise ValueError("Json is strange! No events in the json!")
     events = data['events']
     parsed_events = []
     

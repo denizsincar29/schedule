@@ -209,10 +209,12 @@ class Schedule:
         self.results=self.search_person_from_cache(term, by_id)
         if len(self.results)==0:
             self.results=schedparser.parse_people(search_person(term, by_id, self.token)["_embedded"])
+        return self.results
 
 
     def save_result(self, idx: int, itsme=True):
-        if idx<0 or idx>=len(self.results): return False
+        if idx<0 or idx>=len(self.results):
+            return False
         if itsme:
             self.current_person=self.results[idx]["id"]
             self.save_current_person()
@@ -250,6 +252,8 @@ class Schedule:
 
 
     def get_schedule_str(self, person_id: str, start_time=None, end_time=None, overlap_id: str="") -> str:
+        if overlap_id is None:
+            overlap_id=""
         if overlap_id !="" and overlap_id is not None:
             self.last_msg = f"Общее расписания пользователя {self.get_person_by_id(person_id)['name']} и {self.get_person_by_id(overlap_id)['name']}:\n"
         else:

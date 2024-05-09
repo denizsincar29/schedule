@@ -21,7 +21,7 @@ class App(Thread):
         self.start()
 
     def run(self):
-        dotenv.load_dotenv()
+        dotenv.load_dotenv(".env")  # dont eat from the parent directory.
         email=os.environ.get("MODEUS_EMAIL", "")
         password=os.environ.get("MODEUS_PASSWORD", "")
         self.backward.put(("creds", self.check_credentials(email, password, True)))
@@ -35,7 +35,9 @@ class App(Thread):
                 case "fullname":
                     self.backward.put(("search", self.schedule.search_person(command[1], False)))
                 case "saveperson":
-                    self.schedule.save_person(command[1]["id"])
+                    if command[2] is None:
+                        command[2]=False  # we need to pass a boolean to the function
+                    self.schedule.save_result(command[1], command[2])
                 case "check_credentials":
                     self.backward.put(("creds", self.check_credentials(command[1], command[2], command[3])))
                 case "exit":
@@ -51,6 +53,12 @@ class App(Thread):
         if not direct_pass:
             authed=auth(email, password)
         if authed:
+            if not direct_pass:
+                os.environ["MODEUS_EMAIL"]=email
+                os.environ["MODEUS_PASSWORD"]=password
+                with open(".env", "w") as f:
+                    f.write(f"MODEUS_EMAIL={email}\nMODEUS_PASSWORD={password}\n")
+
             self.schedule=Schedule(email, password)
             self.person=self.schedule.current_person
         return authed

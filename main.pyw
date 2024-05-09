@@ -1,17 +1,16 @@
 # gui for NARFU schedule viewer.
 # WXPython
 
-import dotenv # for email and password
 import wx
 from threading import Thread
 from guinput import GUInput, ChooseFromList, AuthInput
 from datetime import datetime
+from pytz import timezone
 from calendar import isleap
 from app_logic import App
 
 months=["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
 
-dotenv.load_dotenv(".env")
 
 class MainWindow(wx.Frame):
     def __init__(self):
@@ -122,7 +121,7 @@ class MainWindow(wx.Frame):
             day = int(self.date_picker.GetItemText(item))
             month = months.index(self.date_picker.GetItemText(self.date_picker.GetItemParent(item))) + 1
             year = int(self.date_picker.GetItemText(self.date_picker.GetItemParent(self.date_picker.GetItemParent(item))))
-            return datetime(year, month, day)
+            return datetime(year, month, day, 0, 0, 0, 0, timezone("Europe/Moscow"))
         return None
 
     def OnSaveToTxt(self, event):
@@ -154,7 +153,7 @@ class MainWindow(wx.Frame):
 
     def reply_checker(self, event, *args):
         self.handle_replies()
-        event.skip()
+        event.Skip()
         self.timer.Start(milliseconds = 750, oneShot = True)  # run the reply checker every 750 ms
 
     def handle_replies(self):
@@ -176,6 +175,7 @@ class MainWindow(wx.Frame):
 
 
             case "search":
+                print("search!", reply)
                 result=self.choose_from_results(reply[1])
                 if result is None:
                     self.show_error("Ничего не найдено или не выбрано.")
@@ -212,13 +212,13 @@ class MainWindow(wx.Frame):
         self.SetStatusText("Поиск...")
 
     def choose_from_results(self, results):
-        # results is a list of person dicts with name and other info. Return the person dict that the user chose.
+        # results is a list of person dicts with name and other info. Return the person index
         if len(results)==0:
             self.show_error("Ничего не найдено.")
-            return None
+            return -1
         elif len(results)==1:
-            return results[0]  # dont need to ask the user
-        with ChooseFromList(self, "Выберите правильный вариант из списка", [person["name"] for person in results], results) as cfl:
+            return 0
+        with ChooseFromList(self, "Выберите правильный вариант из списка", [person["name"] for person in results], range(len(results))) as cfl:
             status=cfl.ShowModal() == wx.ID_OK
             selection=cfl.GetSelection()
             if status:
