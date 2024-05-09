@@ -6,6 +6,7 @@ from copy import deepcopy  # prevent a huge expensive error that I would spend h
 from modeus import modeus_parse_token, get_schedule, search_person, who_goes, modeus_auth
 
 from pytz import timezone
+moscow=timezone("europe/moscow")  # we overwrite to use localize method
 import schedparser
 
 from pydotdict import DotDict
@@ -113,8 +114,8 @@ class Schedule:
     def get_schedule(self, person_id: str=..., start_time=None, end_time=None, overlap_id: str="") -> dict:
         if person_id==...: person_id=self.current_person
         self.check_token()
-        if start_time is None: start_time=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
-        if end_time is None: end_time=start_time+timedelta(days=1)
+        if start_time is None: start_time=moscow.localize(datetime.now()).replace(hour=0, minute=0, second=0, microsecond=0)
+        if end_time is None: end_time=start_time+timedelta(days=1, seconds=-1)  # end of the day
         g=schedparser.parse_bigjson(get_schedule(person_id, self.token, start_time, end_time))
         if overlap_id!="":
             h=schedparser.parse_bigjson(get_schedule(overlap_id, self.token, start_time, end_time))
@@ -126,7 +127,7 @@ class Schedule:
     def get_month(self, month: int, person_id: str=...) -> list:
         if person_id==...: person_id=self.current_person
         # if month is not -1, start time replaces with that month
-        start_time=datetime.now(timezone("europe/moscow")).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_time=moscow.localize(datetime.now()).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         if month!=-1: start_time=start_time.replace(month=month)
         end_time = start_time + relativedelta(months=1) - timedelta(days=1)
         schedjson=self.get_schedule(person_id, start_time, end_time)
@@ -147,7 +148,7 @@ class Schedule:
             try: os.remove(f"cache/{start_time.month-1}.{person_id}.json")
             except FileNotFoundError: pass
         # filter out diffs that are outdated
-        st=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
+        st=moscow.localize(datetime.now()).replace(hour=0, minute=0, second=0, microsecond=0)
         delta=end_time-st
         return diff  # if there is no diff, it will return empty list
 
@@ -238,7 +239,7 @@ class Schedule:
     def schedule(self, person_id: str, start_time=None, end_time=None, overlap_id: str="") -> dict:
         # this function must be used for getting schedule because it caches it, only use get_schedule for getting from server or you need to get overlapping events
 
-        if start_time is None: start_time=datetime.now(timezone("europe/moscow")).replace(hour=0, minute=0, second=0, microsecond=0)
+        if start_time is None: start_time=moscow.localize(datetime.now()).replace(hour=0, minute=0, second=0, microsecond=0)
         if end_time is None: end_time=start_time+timedelta(days=1, seconds=-1)  # end of the day
         # search in cache first, if not found, get from server
         if overlap_id!="":  # if overlap_id is given, get overlapping events
@@ -252,9 +253,10 @@ class Schedule:
 
 
     def get_schedule_str(self, person_id: str, start_time=None, end_time=None, overlap_id: str="") -> str:
+        print("start_time", start_time, "end_time", end_time, "overlap_id", overlap_id)  # debug
         if overlap_id is None:
             overlap_id=""
-        if overlap_id !="" and overlap_id is not None:
+        if overlap_id !="":
             self.last_msg = f"Общее расписания пользователя {self.get_person_by_id(person_id)['name']} и {self.get_person_by_id(overlap_id)['name']}:\n"
         else:
             self.last_msg=f"Расписание пользователя {self.get_person_by_id(person_id)['name']}:\n"

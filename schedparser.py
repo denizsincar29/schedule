@@ -196,6 +196,7 @@ def humanize_events(events, laconic=False):
         return MSGS['no_events'][laconic]
     multi=len(multiday(events))>1
     first_event_date=datetime.fromisoformat(events[0]['date']).strftime('%d/%m')
+    print("first event date:", first_event_date)  # debug
     msg="" if not multi else first_event_date+":\n"
     # if day changes or first event in multiday, msg+=date, but separated by \n\n
     prevdate=None
