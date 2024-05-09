@@ -44,13 +44,16 @@ class GUInput(wx.Dialog):
             self.Close()
 
     def OnOk(self, e):
+        print("debug! Everything is ID_OK")
         self.value=self.tc.GetValue()
         if self.value == "":
             return  # dont allow empty input. Only allow cancel
         self.status=True
         self.proper_close()
+        e.Skip()
     def OnClose(self, e):
         self.proper_close()
+        e.Skip()
 
 class ChooseFromList(wx.Dialog):
     def __init__(self, parent, title, choices, bound=None):  # bound is the parallel list to choices. So choices are for display, bound is for return
@@ -97,8 +100,10 @@ class ChooseFromList(wx.Dialog):
         self.value=self.bound[self.choice.GetSelection()]
         self.status=True
         self.proper_close()
+        e.Skip()
     def OnClose(self, e):
         self.proper_close()
+        e.Skip()
 
 
 class AuthInput(wx.Dialog):
@@ -149,8 +154,10 @@ class AuthInput(wx.Dialog):
             return
         self.status=True
         self.proper_close()
+        e.Skip()
     def OnClose(self, e):
         self.proper_close()
+        e.Skip()
 
     def GetValues(self):
         return self.tc1.GetValue(), self.tc2.GetValue()

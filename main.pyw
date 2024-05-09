@@ -202,7 +202,6 @@ class MainWindow(wx.Frame):
         with GUInput(self, "Введите ФИО") as guinput:
             print("before showmodal")
             status=guinput.ShowModal() == wx.ID_OK
-            print("after showmodal")  # frost! not responding
             if status:
                 name=guinput.value
                 self.app.send_command(["fullname", name])
@@ -241,7 +240,6 @@ class MainWindow(wx.Frame):
 
 
 
-# make fake callbacks for testing
 if __name__ == "__main__":
     wxapp = wx.App(False)
     frame = MainWindow()
