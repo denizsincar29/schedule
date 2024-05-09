@@ -24,13 +24,7 @@ class App(Thread):
         dotenv.load_dotenv()
         email=os.environ.get("MODEUS_EMAIL", "")
         password=os.environ.get("MODEUS_PASSWORD", "")
-        match self.check_credentials(email, password, True):
-            case False:  # can't return False when direct passing.
-                self.backward.put(("auth", "invalid",))  # touplify every reply to avoid confusion
-            case True:
-                self.backward.put(("auth", "welcome"))
-            case dotdotdot:
-                self.backward.put(("auth", "credentials"))
+        self.backward.put(("creds", self.check_credentials(email, password, True)))
         while True:
             command = self.forward.get()  # blocks until we get something
             command.extend([None]*(4-len(command)))

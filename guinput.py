@@ -44,7 +44,6 @@ class GUInput(wx.Dialog):
             self.Close()
 
     def OnOk(self, e):
-        print("debug! Everything is ID_OK")
         self.value=self.tc.GetValue()
         if self.value == "":
             return  # dont allow empty input. Only allow cancel

@@ -153,22 +153,20 @@ class MainWindow(wx.Frame):
         # that's all. This function ends here. The schedule will be displayed in the control when the app thread finishes the command.
 
     def reply_checker(self, event, *args): # now commands are tuples, so we can use tuple match command[0]
-        event.Skip()
-        # if i will get headaches from this, the credential checker will return quickly and if it is not authed, it will ask for credentials again.
         if not self.app.has_reply:
+            event.skip()
             return
         reply = self.app.get_reply()
         match reply[0]:
             case "Unknown":
                 self.show_error("Ошибка. Поток приложения плетёт всякую чушь. Отправьте разработчику.", True)
-            case "auth":
-                # now we check. If welcome, we do nothing. If invalid or credentials, we ask for credentials.
-                if reply[1]=="welcome":
+            case "creds":
+                if reply[1]==True:  #noqa
                     #we ask for name
                     if self.app.person is None:
                         self.ask_fullname()
-                elif reply[1]=="invalid" or reply[1]=="credentials":
-                    if reply[1]=="invalid":
+                elif reply[1]==... or reply[1]==False:  #noqa
+                    if reply[1]==False:
                         self.show_error("Неверный email или пароль.")
                     self.ask_emailnpassword()
 
@@ -178,6 +176,7 @@ class MainWindow(wx.Frame):
                 if result is None:
                     self.show_error("Ничего не найдено или не выбрано.")
                     self.ask_fullname()
+                    event.Skip()
                     return
                 self.app.send_command(["saveperson", result])
                 self.authed=True
@@ -186,6 +185,7 @@ class MainWindow(wx.Frame):
             case "schedule":
                 self.control.SetValue(reply[1])
                 self.SetStatusText("Расписание получено.")
+        event.Skip()
 
 
 
@@ -200,7 +200,6 @@ class MainWindow(wx.Frame):
 
     def ask_fullname(self, itsme=False):
         with GUInput(self, "Введите ФИО") as guinput:
-            print("before showmodal")
             status=guinput.ShowModal() == wx.ID_OK
             if status:
                 name=guinput.value
@@ -217,7 +216,6 @@ class MainWindow(wx.Frame):
             return None
         elif len(results)==1:
             return results[0]  # dont need to ask the user
-        
         with ChooseFromList(self, "Выберите правильный вариант из списка", [person["name"] for person in results], results) as cfl:
             status=cfl.ShowModal() == wx.ID_OK
             selection=cfl.GetSelection()
