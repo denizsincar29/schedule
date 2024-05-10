@@ -8,6 +8,7 @@ from pytz import timezone
 from calendar import isleap
 from app_logic import App
 
+moscow=timezone("Europe/Moscow")
 months=["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
 
 
@@ -114,7 +115,7 @@ class MainWindow(wx.Frame):
             day = int(self.date_picker.GetItemText(item))
             month = months.index(self.date_picker.GetItemText(self.date_picker.GetItemParent(item))) + 1
             year = int(self.date_picker.GetItemText(self.date_picker.GetItemParent(self.date_picker.GetItemParent(item))))
-            return datetime(year, month, day, 0, 0, 0, 0, timezone("Europe/Moscow"))
+            return moscow.localize(datetime(year, month, day))
         return None
 
     def OnSaveToTxt(self, event):
