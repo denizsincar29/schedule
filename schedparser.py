@@ -71,7 +71,7 @@ def parse_bigjson(data):
     if "_embedded" in data:
         data = data["_embedded"]
     if "events" not in data:
-        raise ValueError("Json is strange! No events in the json!")
+        return []  # no events
     events = data['events']
     parsed_events = []
     
@@ -197,15 +197,13 @@ def humanize_events(events, laconic=False):
     multi=len(multiday(events))>1
     first_event_date=datetime.fromisoformat(events[0]['date']).strftime('%d/%m')
     print("first event date:", first_event_date)  # debug
-    msg="" if not multi else first_event_date+":\n"
+    msg="" if multi else first_event_date+":\n"
     # if day changes or first event in multiday, msg+=date, but separated by \n\n
     prevdate=None
     for event in events:
         if multi:
-            if prevdate is None:
-                prevdate=event['date']
-            elif prevdate!=event['date']:
-                msg+='\n\n'
+            if prevdate!=event['date']:
+                msg+='\n\n' if prevdate is not None else ""
                 prevdate=event['date']
                 msg+=f"{datetime.fromisoformat(event['date']).strftime('%d/%m')}:\n"
         msg+=humanize_event_id(event['id'], events, laconic)+'\n'
