@@ -50,13 +50,13 @@ b = Analysis(
     noarchive=False,
     optimize=0,
 )
-pyz = PYZ(b.pure)
+pyz2 = PYZ(b.pure)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
+exe2 = EXE(
+    pyz2,
+    b.scripts,
+    b.binaries,
+    b.datas,
     [],
     name='schedule',
     debug=False,
@@ -72,4 +72,3 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
-```

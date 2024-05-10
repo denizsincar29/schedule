@@ -138,8 +138,7 @@ class MainWindow(wx.Frame):
         # get the schedule for the selected date
         date = self.get_selected_date()
         if date is None:
-            self.show_error("Выберите дату.")
-            return
+            return  # we are not on the leaf of the tree
         self.SetStatusText("Получение расписания...")
         self.control.SetValue("Получение расписания...")
         self.app.send_command(["schedule", date, None, None], self.schedule_cb)
