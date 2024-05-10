@@ -53,12 +53,10 @@ class Schedule:
 
     def save_token(self):
         if self.token is None or self.token==...:
-            print("no token, ignoring!")
             return
         self.config.api.token=self.token
         self.config.api.expires=self.expire.timestamp()
         self.config.save_config()
-        print("saved new token")
 
     def load_token(self):
         self.expire=datetime.fromtimestamp(self.config.api.expires)
@@ -72,7 +70,7 @@ class Schedule:
         if self.token==...:  # first run
             self.load_token()
         if datetime.now()>self.expire or self.token is None:  # token expired or not loaded
-            print("getting_token")
+            print("Получение токена. Пожалуйста, подождите...")
             self.token=modeus_parse_token(self.email, self.password)            
             self.expire=datetime.now()+timedelta(hours=12)  # modeus token lives for 12 hours and dies!
             self.save_token()
@@ -253,7 +251,6 @@ class Schedule:
 
 
     def get_schedule_str(self, person_id: str, start_time=None, end_time=None, overlap_id: str="") -> str:
-        print("start_time", start_time, "end_time", end_time, "overlap_id", overlap_id)  # debug
         if overlap_id is None:
             overlap_id=""
         if overlap_id !="":
