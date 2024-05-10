@@ -53,10 +53,10 @@ class App(Thread):
                 case "schedule":
                     wxrun(cb, self.schedule.get_schedule_str(self.schedule.current_person, command[1], command[2], command[3]))
                 case "fullname":
-                    wxrun(cb, self.schedule.search_person(command[1], False))
+                    wxrun(cb, self.schedule.search_person(command[1], False))  # by_id is False
                 case "saveperson":
                     if command[2] is None:
-                        command[2]=False  # we need to pass a boolean to the function
+                        command[2]=True  # we need to pass a boolean to the function
                     self.schedule.save_result(command[1], command[2])
                 case "check_credentials":
                     self.check_credentials(command[1], command[2], command[3])

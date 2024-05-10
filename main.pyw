@@ -62,7 +62,7 @@ class MainWindow(wx.Frame):
             else:
                 self.authed=True
                 self.SetStatusText("Получение расписания...")
-                self.schedule()
+                self.schedule(self.date_picker.get_selected_date())
         elif state==... or state==False:  #noqa
             if state==False:  #noqa
                 self.show_error("Неверный email или пароль.")
@@ -77,7 +77,7 @@ class MainWindow(wx.Frame):
         self.app.send_command(["saveperson", result])
         self.authed=True
         self.SetStatusText("Получение расписания...")
-        self.schedule()
+        self.schedule(self.date_picker.get_selected_date())
 
     def schedule_cb(self, schedule):
         self.control.SetValue(schedule)
@@ -101,7 +101,7 @@ class MainWindow(wx.Frame):
             status=guinput.ShowModal() == wx.ID_OK
             if status:
                 name=guinput.value
-                self.app.send_command(["fullname", name])
+                self.app.send_command(["fullname", name], self.search_cb)
             else:
                 if itsme: # if asked for my name, exit. In the future it can ask for friend's name for getting their schedule.
                     self.exit()
@@ -114,9 +114,12 @@ class MainWindow(wx.Frame):
             return -1
         elif len(results)==1:
             return 0
-        with ChooseFromList(self, "Выберите правильный вариант из списка", [person["name"] for person in results], range(len(results))) as cfl:
+        people=[]
+        for person in results:
+            people.append(self.app.schedule.humanize_person(person["id"], results))
+        with ChooseFromList(self, "Выберите правильный вариант из списка", people, range(len(results))) as cfl:
             status=cfl.ShowModal() == wx.ID_OK
-            selection=cfl.GetSelection()
+            selection=cfl.value
             if status:
                 return selection
             return None
