@@ -5,8 +5,7 @@ import wx
 from guinput import GUInput, ChooseFromList, AuthInput
 from datepicker import DatePicker
 from app_logic import App
-
-
+import sys
 
 class MainWindow(wx.Frame):
     def __init__(self):
@@ -140,9 +139,19 @@ class MainWindow(wx.Frame):
             self.Destroy()  # if called from code
 
 
+showhide = False
+def toggle():
+    global showhide
+    if showhide:
+        frame.Show()
+    else:
+        frame.Hide()
+    showhide = not showhide
 
 
 if __name__ == "__main__":
     wxapp = wx.App(False)
+    if "hide" in sys.argv:  # run as daemon
+        showhide = True
     frame = MainWindow()
     wxapp.MainLoop()
