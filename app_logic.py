@@ -22,6 +22,7 @@ from datetime import datetime
 from pytz import timezone
 from threading import Thread
 from queue import Queue
+from random import choice
 from wx import CallAfter as wxrun  # fully rewriting the thread not to use queues.
 from win11toast import notify
 import os
@@ -29,6 +30,11 @@ import dotenv # move dotenv check here
 from sys import exit  # pyinstaller can't find it in some cases
 dotdotdot=... # for the match statement
 VERSION="1.0.0-beta2"
+
+def randomsound():
+    greatsounds=["Alarm4", "Alarm6", "Alarm10"]
+    return f"ms-winsoundevent:Notification.Looping.{choice(greatsounds)}"
+
 
 class App(Thread):
     def __init__(self, on_auth=None):
@@ -86,7 +92,7 @@ class App(Thread):
             self.person=self.schedule.current_person
             diffs=self.schedule.get_month(-1)  # -1 is the current month
             if diffs!=[]:
-                notify("Расписание изменилось!", self.schedule.humanize_diff(diffs), audio="ms-winsoundevent:Notification.Looping.Call10")  # that sound is great
+                notify("Расписание изменилось!", self.schedule.humanize_diff(diffs), audio=randomsound())
         if self.on_auth:
             wxrun(self.on_auth, authed)  # run the function in the main thread
 

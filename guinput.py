@@ -142,7 +142,40 @@ class AuthInput(wx.Dialog):
 
     def GetValues(self):
         return self.tc1.GetValue(), self.tc2.GetValue()
-    
+
+
+class PopUpMSG(wx.Dialog):
+    # like an inputbox, but the edit box is read-only and full of text
+    def __init__(self, parent, title, text, cancelbtn=False):
+        super(PopUpMSG, self).__init__(parent, title=title, size=(250, 150))
+        self.InitUI(text, cancelbtn)
+        self.Centre()
+
+    def InitUI(self, text, cancelbtn):
+        panel = wx.Panel(self)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+        st1 = wx.StaticText(panel, label=text)
+        hbox1.Add(st1, flag=wx.RIGHT, border=8)
+        vbox.Add(hbox1, flag=wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
+
+        hbox2 = wx.BoxSizer(wx.HORIZONTAL)
+        # ok button triggers on enter also, cancel button triggers on esc
+        okButton = wx.Button(panel, label='OK', id=wx.ID_OK)
+        okButton.Bind(wx.EVT_BUTTON, self.OnClose)
+        hbox2.Add(okButton)
+        if cancelbtn:
+            cancelButton = wx.Button(panel, label='Cancel', id=wx.ID_CANCEL)
+            cancelButton.Bind(wx.EVT_BUTTON, self.OnClose)
+            hbox2.Add(cancelButton, flag=wx.LEFT, border=5)
+        vbox.Add(hbox2, flag=wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border=10)
+        panel.SetSizer(vbox)
+
+    def OnClose(self, e):
+        self.Close()
+        e.Skip()
+
 
 def inputbox(parent, title):
     if parent is None:
@@ -164,3 +197,10 @@ def choosebox(parent, title, choices, bound=None):
     with ChooseFromList(parent, title, choices, bound) as inputDialog:
         status=inputDialog.ShowModal()
         return status==OK, inputDialog.value
+
+def popupmsg(parent, title, text, cancelbtn=False):
+    if parent is None:
+        app = wx.App()  #noqa F841
+    with PopUpMSG(parent, title, text, cancelbtn) as inputDialog:
+        status=inputDialog.ShowModal()
+        return status==OK

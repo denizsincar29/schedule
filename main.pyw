@@ -2,9 +2,11 @@
 # WXPython
 
 import wx
-from guinput import GUInput, ChooseFromList, AuthInput
+from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG
 from datepicker import DatePicker
 from app_logic import App
+from news import news
+VERSION="1.0.0-beta3"
 import sys
 
 class MainWindow(wx.Frame):
@@ -30,6 +32,9 @@ class MainWindow(wx.Frame):
         self.CreateStatusBar()
         self.Centre()
         self.Show(True)
+        if (n:=news()) is not None:
+            self.app.send_command(["toast", "Новость!", n, "ms-winsoundevent:Notification.Looping.Call10"])  # call10 is the best sound
+            PopUpMSG(self, "Новость!", n).ShowModal()
         self.SetStatusText("Авторизация...")
 
     def OnSaveToTxt(self, event):
@@ -150,6 +155,8 @@ def toggle():
     else:
         frame.Hide()
     showhide = not showhide
+
+
 
 
 if __name__ == "__main__":
