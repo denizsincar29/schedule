@@ -1,5 +1,6 @@
 reminder.txt
 news.txt
+news.old.txt
 *.json
 schedule.txt
 *.log
