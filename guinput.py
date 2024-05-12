@@ -156,7 +156,7 @@ class PopUpMSG(wx.Dialog):
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         hbox1 = wx.BoxSizer(wx.HORIZONTAL)
-        st1 = wx.StaticText(panel, label=text)
+        st1 = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY)
         hbox1.Add(st1, flag=wx.RIGHT, border=8)
         vbox.Add(hbox1, flag=wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
 

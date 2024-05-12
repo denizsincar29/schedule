@@ -6,7 +6,7 @@ import os
 def news():
     if not os.path.exists("news.txt"):
         return None  # dont show.
-    with open("news.txt", "r") as f:
+    with open("news.txt", "r", encoding="UTF-8") as f:
         new=f.read()
-    os.remove("news.txt")  # to prevent showing the same news over and over and over again xD
+    os.rename("news.txt", "news.old.txt") # dont delete in case of error
     return new

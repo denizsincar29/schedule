@@ -40,7 +40,7 @@ class MainWindow(wx.Frame):
     def OnSaveToTxt(self, event):
         # save to schedule.txt
         event.Skip()
-        with open("schedule.txt", "w") as f:
+        with open("schedule.txt", "w", encoding="UTF-8") as f:
             f.write(self.control.GetValue())
         self.SetStatusText("Расписание сохранено в schedule.txt")
 
