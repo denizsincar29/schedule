@@ -23,6 +23,7 @@ from pytz import timezone
 from threading import Thread
 from queue import Queue
 from wx import CallAfter as wxrun  # fully rewriting the thread not to use queues.
+from win11toast import notify
 import os
 import dotenv # move dotenv check here
 from sys import exit  # pyinstaller can't find it in some cases
@@ -60,6 +61,8 @@ class App(Thread):
                     self.schedule.save_result(command[1], command[2])
                 case "check_credentials":
                     self.check_credentials(command[1], command[2], command[3])
+                case "toast":
+                    notify(command[1], command[2], audio=command[3])  # audio can be None or filename
                 case "exit":
                     return  # exit the thread
                 case _:
@@ -78,10 +81,12 @@ class App(Thread):
                 os.environ["MODEUS_PASSWORD"]=password
                 with open(".env", "w") as f:
                     f.write(f"MODEUS_EMAIL={email}\nMODEUS_PASSWORD={password}\n")
-
             self.schedule=Schedule(email, password)
             self.schedule.load_people()
             self.person=self.schedule.current_person
+            diffs=self.schedule.get_month(-1)  # -1 is the current month
+            if diffs!=[]:
+                notify("Расписание изменилось!", self.schedule.humanize_diff(diffs), audio="ms-winsoundevent:Notification.Looping.Call10")  # that sound is great
         if self.on_auth:
             wxrun(self.on_auth, authed)  # run the function in the main thread
 

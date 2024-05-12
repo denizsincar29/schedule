@@ -8,6 +8,7 @@ cache/
 *.pyc
 build/
 dist/
+dist2/
 __pycache__/
 venv/
 *.pyo

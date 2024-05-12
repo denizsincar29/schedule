@@ -42,7 +42,7 @@ class MainWindow(wx.Frame):
 
 
 
-    def schedule(self, dates=[]):
+    def schedule(self, dates=[], toast=False):
         # get the schedule for the selected date
         if len(dates)==0:
             return  # we are not on the leaf of the tree
@@ -50,7 +50,8 @@ class MainWindow(wx.Frame):
         self.control.SetValue("Получение расписания...")
         start_date=min(dates)
         end_date=max(dates) if len(dates)>1 else None  # if there is only one date, end_date is None
-        self.app.send_command(["schedule", start_date, end_date, None], self.schedule_cb)
+        schedcb=lambda schedule: self.schedule_cb(schedule, toast)
+        self.app.send_command(["schedule", start_date, end_date, None], schedcb)
         # that's all. This function ends here. The schedule will be displayed in the control when the app thread finishes the command.
 
     def check_auth_cb(self, state):
@@ -61,7 +62,7 @@ class MainWindow(wx.Frame):
             else:
                 self.authed=True
                 self.SetStatusText("Получение расписания...")
-                self.schedule(self.date_picker.get_selected_date())
+                self.schedule(self.date_picker.get_selected_date(), True)
         elif state==... or state==False:  #noqa
             if state==False:  #noqa
                 self.show_error("Неверный email или пароль.")
@@ -76,11 +77,13 @@ class MainWindow(wx.Frame):
         self.app.send_command(["saveperson", result])
         self.authed=True
         self.SetStatusText("Получение расписания...")
-        self.schedule(self.date_picker.get_selected_date())
+        self.schedule(self.date_picker.get_selected_date(), True)
 
-    def schedule_cb(self, schedule):
+    def schedule_cb(self, schedule, toast=False):
         self.control.SetValue(schedule)
         self.SetStatusText("Расписание получено.")
+        if toast:
+            self.app.send_command(["toast", "Расписание САФУ", schedule])
 
 
 

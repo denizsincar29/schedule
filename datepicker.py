@@ -75,10 +75,8 @@ class DatePicker(wx.TreeCtrl):
 
     def get_selected_date(self):
         items = self.GetSelections()
-        if len(items) == 0:
-            return None
         dates=[]
-        for item in items:        
+        for item in items:  # if no item, it will pass
             if not (item is not None and self.ItemHasChildren(item) == False):
                 continue
             if item.IsOk():
