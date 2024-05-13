@@ -4,6 +4,7 @@ import sys
 from packaging import version
 from subprocess import Popen
 import tqdm
+#from
 
 def get_latest_release(user, repo, prerelease=False):
     """
@@ -50,8 +51,9 @@ def download_release(url, path):
     with open(path, 'wb') as f:
         # get the total file size from the response headers
         total = int(response.headers.get('Content-Length', 0))
-        for chunk in tqdm.tqdm(response.iter_bytes(), desc="Downloading", unit="B", unit_scale=True, total=total):
+        for chunk in response.iter_bytes():
             f.write(chunk)
+            yield "Downloading...", len(chunk), total
 
 def check_and_update(user, repo, current_version, download_path, prerelease=False):
     """
@@ -71,9 +73,6 @@ def check_and_update(user, repo, current_version, download_path, prerelease=Fals
     # if not pyinstalled, we will not update
     if not hasattr(sys, 'frozen'):
         return
-    try: os.remove("restart.bat")  # remove the restart.bat file if it exists
-    except FileNotFoundError: pass
-    new_exe=os.path.splitext(download_path)[0]+".new"+os.path.splitext(download_path)[1]
     release = get_latest_release(user, repo, prerelease)
     latest_version = release['tag_name']
     # if no release is found, return False
@@ -86,27 +85,16 @@ def check_and_update(user, repo, current_version, download_path, prerelease=Fals
             if asset['name']==download_filename:
                 download_url = asset['browser_download_url']
                 # .exe to .new.exe
-                download_release(download_url, new_exe)
+                yield from download_release(download_url, download_path)
                 yield (True, latest_version, release['body'])
                 return
     yield (False, latest_version, "no update available")
 
-def restart():
+def restart(filename):
     """
     Restarts the current program.
     Note: This function does not return. Any cleanup action (like saving data) must be done before calling this function.
     """
-    # make up a bat file that will delete the x.exe and rename x.new.exe to x.exe than run x
-    new_exe=os.path.splitext(sys.argv[0])[0]+".new"+os.path.splitext(sys.argv[0])[1]
-    bat=f"""@echo off
-timeout /t 1 /nobreak >nul
-del "{sys.argv[0]}"
-ren "{new_exe}" "{os.path.basename(sys.argv[0])}"
-start "" "{sys.argv[0]}"
-"""
-    with open("restart.bat", "w", encoding="utf-8") as f:
-        f.write(bat)
-    # popen in background to exit before the bat file is executed
-    Popen("restart.bat", shell=True)
-    print("exitting")  # debug
+    # popen the sfx and quickly exit
+    Popen(filename)
     sys.exit()
