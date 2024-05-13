@@ -9,17 +9,37 @@ from copy import deepcopy
 STUDIES = ["08:20", "10:10", "12:00", "14:30", "16:15", "18:00", "19:40"]
 
 def get_name(event_id, data):
-    course_unit_realizations=data['course-unit-realizations']
-    name=None
+    """
+    Retrieves the name of an event based on its ID from the given data.
+
+    Parameters:
+    - event_id (int): The ID of the event to retrieve the name for.
+    - data (dict): The data containing the course unit realizations.
+
+    Returns:
+    - str or None: The name of the event if found, None otherwise.
+    """
+    course_unit_realizations = data['course-unit-realizations']
+    name = None
     for cur in course_unit_realizations:
-        if cur['id']==event_id:
-            name=cur['name']
+        if cur['id'] == event_id:
+            name = cur['name']
             break
     return name
 
 
 
 def get_teacher(event_id, data):
+    """
+    Retrieves the name of the teacher for an event based on its ID from the given data.
+
+    Parameters:
+    - event_id (int): The ID of the event to retrieve the teacher for.
+    - data (dict): The data from the server.
+
+    Returns:
+    - str or None: The name of the teacher if found, None otherwise.
+    """
     # works with the big mess
     event_attendees = data['event-attendees']
     event_organizers = data['event-organizers']
@@ -44,6 +64,16 @@ def get_teacher(event_id, data):
             return full_name
 
 def get_room(event_id, data):
+    """
+    Retrieves the room name and address for an event based on its ID from the given data.
+
+    Parameters:
+    - event_id (int): The ID of the event to retrieve the room for.
+    - data (dict): The data from the server.
+
+    Returns:
+    - tuple or None: A tuple containing the room name and address if found, None otherwise.
+    """
     # works with the big mess
     event_locations = data['event-locations']
     event_rooms = data['event-rooms']	
@@ -66,6 +96,15 @@ def get_room(event_id, data):
 
 
 def parse_bigjson(data):
+    """
+    Parses the given data from the server into a more readable json format.
+
+    Parameters:
+    - data (dict): The data from the server.
+
+    Returns:
+    - list: The parsed data containing the events.
+    """
     # transforms the big mess into prepared data
     # normally data is value of _embedded key, but if not, then set data=data["_embedded"]
     if "_embedded" in data:
@@ -107,6 +146,24 @@ def parse_bigjson(data):
 
 
 def filter_events(data, date=None, delta=None, start_time=None, end_time=None, evt_num=None, evt_name_query=None, teacher_query=None, room_query=None, status=None):  # all kwargs are optional
+    """
+    Filters the given data based on the provided parameters.
+
+    Parameters:
+    - data (list): The data to filter.
+    - date (datetime): The date to filter by.
+    - delta (timedelta): The time delta to filter by.
+    - start_time (str): The start time to filter by.
+    - end_time (str): The end time to filter by.
+    - evt_num (int): The event number to filter by.
+    - evt_name_query (str): The event name query to filter by.
+    - teacher_query (str): The teacher query to filter by.
+    - room_query (str): The room query to filter by.
+    - status (str): The status to filter by.
+
+    Returns:
+    - list: The filtered data.
+    """
     # filters the prepared data
     if isinstance(data, dict):
         raise ValueError("Hey, you passed the full schedule json, not events list!")
@@ -166,6 +223,16 @@ MSGS={
 }
 
 def get_event_by_id(event_id, data):
+    """
+    Retrieves an event based on its ID from the given data.
+
+    Parameters:
+    - event_id (int): The ID of the event to retrieve.
+    - data (list): The prepared data containing the events.
+
+    Returns:
+    - dict or None: The event if found, None otherwise.
+    """
     # returns the event by its id
     for event in data:
         if event['id'] == event_id:  # it's modeus's resp that the id is unique xD
@@ -174,6 +241,17 @@ def get_event_by_id(event_id, data):
 
 
 def humanize_event_id(event_id, data, laconic=False):
+    """
+    Transforms an event into a human-readable format based on its ID.
+
+    Parameters:
+    - event_id (int): The ID of the event to humanize.
+    - data (list): The prepared data containing the events.
+    - laconic (bool): Whether to use laconic mode.
+
+    Returns:
+    - str: The humanized event.
+    """
     # parsing from the prepared data
     event = get_event_by_id(event_id, data)
     if event is None:
@@ -186,11 +264,30 @@ def humanize_event_id(event_id, data, laconic=False):
     return msg
 
 def multiday(events):
+    """
+    Retrieves all dates of the events.
+
+    Parameters:
+    - events (list): The events to retrieve the dates for.
+
+    Returns:
+    - set: The dates of the events.
+    """
     # return all dates of the events by set comprehension
     dates={event['date'] for event in events}
     return dates
 
 def humanize_events(events, laconic=False):
+    """
+    Transforms a list of events into a human-readable format.
+
+    Parameters:
+    - events (list): The events to humanize.
+    - laconic (bool): Whether to use laconic mode.
+
+    Returns:
+    - str: The humanized events.
+    """
     # parsing from the prepared data
     if len(events) == 0:
         return MSGS['no_events'][laconic]
@@ -209,6 +306,15 @@ def humanize_events(events, laconic=False):
     return msg
 
 def parse_people(data):
+    """
+    Parses the given list of people (students or teachers) into a more readable format.
+
+    Parameters:
+    - data (dict): The data containing the people information.
+
+    Returns:
+    - list: The parsed people.
+    """
     # big mess to prepared data
     #students=data['students'] if 'students' in data else []  # there can be no students or employees
     #employees=data['employees'] if 'employees' in data else []
@@ -252,21 +358,44 @@ def parse_people(data):
 
 
 def get_person_info(person_id, data):
+    """
+    Retrieves the information of a person based on their ID from the given data.
+
+    Parameters:
+    - person_id (int): The ID of the person to retrieve the information for.
+    - data (dict): The data containing the people information (returned by the server).
+
+    Returns:
+    - tuple: The type of the person and their information.
+    """
     # big mess to person's info
     if "students" in data:
         person=[per for per in data["students"] if person_id==per["personId"]]  # get the person by id from the students
-        if len(person)==0 and "employees" not in data: raise ValueError("Json is strange! If you put in the person id right from this json, than json is terribly wrong or corrupted.")  # either students or employees must be in the json
-        if len(person)>0: return "student", person[0]
+        if len(person)==0 and "employees" not in data:
+            raise ValueError("Json is strange! If you put in the person id right from this json, than json is terribly wrong or corrupted.")  # either students or employees must be in the json
+        if len(person)>0:
+            return "student", person[0]
         # if len(person)==0, then we need to check the employees
     if "employees" in data:  # further a student can't pass here
         person=[per for per in data["employees"] if person_id==per["personId"]]
-        if len(person)==0 and "students" not in data: raise ValueError("Json is strange! If you put in the person id right from this json, than json is terribly wrong or corrupted.")
-        if len(person)>0: return "employee", person[0]  # both can't pass further
+        if len(person)==0 and "students" not in data:
+            raise ValueError("Json is strange! If you put in the person id right from this json, than json is terribly wrong or corrupted.")
+        if len(person)>0:
+            return "employee", person[0]  # both can't pass further
     return None, None  # incorrect id
 
 
 def get_person_by_id(person_id, data):
-    # returns the person by its id
+    """
+    Retrieves a person based on their ID from the given prepared data.
+
+    Parameters:
+    - person_id (int): The ID of the person to retrieve.
+    - data (list): The prepared data containing the people information.
+
+    Returns:
+    - dict or None: The person if found, None otherwise.
+    """
     for person in data:
         if person['id'] == person_id:
             return person
@@ -274,6 +403,17 @@ def get_person_by_id(person_id, data):
 
 
 def humanize_person(person_id, data):
+    """
+    Transforms person info into a human-readable format based on their ID.
+
+    Parameters:
+
+    - person_id (int): The ID of the person to humanize.
+    - data (list): The prepared data containing the people information.
+
+    Returns:
+    - str: The humanized person info.
+    """
     # works with the prepared data
     person = get_person_by_id(person_id, data)
     if person is None:
@@ -298,6 +438,16 @@ def humanize_person(person_id, data):
 
 
 def events_equality(event1, event2):
+    """
+    Compares two events and returns the fields that are not equal.
+
+    Parameters:
+    - event1 (dict): The first event to compare.
+    - event2 (dict): The second event to compare.
+
+    Returns:
+    - list: The fields that are not equal.
+    """
     # if ids are not equal, []. If ids are equal but some fields are not, then return the fields that are not equal. If all fields are equal, then return ...
     if event1==event2:
         return ...  # dotdotdot!
@@ -326,6 +476,16 @@ def events_equality(event1, event2):
 
 
 def diff(old, new):
+    """
+    Compares two lists of events and returns the difference between them.
+
+    Parameters:
+    - old (list): The old list of events.
+    - new (list): The new list of events.
+
+    Returns:
+    - list: The difference between the two lists in the prepared data format with the diff key.
+    """
     # returns the difference between two lists of events in the prepared data format with the diff key. Return only added, removed and changed events
     old=deepcopy(old)
     new=deepcopy(new)
@@ -356,10 +516,24 @@ def diff(old, new):
     return events
 
 def human_diff(diff, date=None, delta=None, ifnodiff=False):
+    """
+    Transforms the difference between two lists of events into a human-readable format.
+
+    Parameters:
+    - diff (list): The difference between the two lists of events (returned by diff function).
+    - date (datetime): The date to filter by.
+    - delta (timedelta): The time delta to filter by.
+    - ifnodiff (bool): Whether to return a message if there is no difference.
+
+    Returns:
+    - str: The humanized difference.
+    """
     # returns a human readable diff
     if len(diff)==0:
-        if ifnodiff: return MSGS['no_diff'][True]
-        else: return ""  # normally we ssend notification only if there is a diff
+        if ifnodiff:
+            return MSGS['no_diff'][True]
+        else:
+            return ""  # normally we ssend notification only if there is a diff
     msg=""
     multi=len(multiday(diff))>1
     # if day changes or first event in multiday, msg+=date, but separated by \n\n

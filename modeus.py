@@ -4,6 +4,19 @@ from datetime import datetime
 from pytz import UTC
 
 def modeus_parse_token(email: str, password: str) -> str:
+    """
+    Parse id_token from modeus server.
+
+    Parameters:
+    email (str): email.
+    password (str): password.
+
+    Returns:
+    str: id_token.
+
+    Raises:
+    RuntimeError: if can't parse 1st form, 2nd form or id_token.
+    """
     with httpx.Client(timeout=10) as client:
         params = {
             "client_id":"YDNCeCPsf1zL2etGQflijyfzo88a",
@@ -52,6 +65,19 @@ def modeus_parse_token(email: str, password: str) -> str:
         return id_token
 
 def modeus_auth(email: str, password: str) -> bool:
+    """
+    Check if user's credentials are correct.
+
+    Parameters:
+    email (str): email.
+    password (str): password.
+
+    Returns:
+    bool: True if credentials are correct, False otherwise.
+
+    Raises:
+    RuntimeError: if can't parse 1st form, 2nd form.
+    """
         # copy-paste from modeus_parse_token until can't parse 2nd form. If parsed, return True
     with httpx.Client(timeout=10) as client:
         params = {
@@ -94,6 +120,22 @@ def modeus_auth(email: str, password: str) -> bool:
 
 
 def get_schedule(person_id: str, modeus_token: str, start_time: datetime, end_time: datetime) -> dict:
+    """
+    Get schedule of a person.
+
+    Parameters:
+    person_id (str): person id.
+    modeus_token (str): modeus token.
+    start_time (datetime): start time.
+    end_time (datetime): end time.
+
+    Returns:
+    dict: huge json with schedule.
+
+    Raises:
+    ValueError: if start_time >= end_time.
+    RuntimeError: if can't find key embedded.
+    """
     if end_time<=start_time:
         raise ValueError("Time is bad!")
     url = "https://narfu.modeus.org/schedule-calendar-v2/api/calendar/events/search?tz=Europe/Moscow"
@@ -122,6 +164,20 @@ def get_schedule(person_id: str, modeus_token: str, start_time: datetime, end_ti
         else: raise RuntimeError("No key embedded")
 
 def search_person(term: str, by_id: bool, modeus_token: str) -> dict:
+    """
+    Search person in the university database.
+
+    Parameters:
+    term (str): search term.
+    by_id (bool): search by id or by full name.
+    modeus_token (str): modeus token.
+
+    Returns:
+    dict: huge json with search results.
+
+    Raises:
+    RuntimeError: if can't find key embedded.
+    """
     mode="id" if by_id else "fullName"
     request_json = {
         "size": 10,
@@ -147,6 +203,19 @@ def search_person(term: str, by_id: bool, modeus_token: str) -> dict:
         else: raise RuntimeError("No key embedded")
 
 def who_goes(event_id: str, modeus_token: str) -> dict:
+    """
+    Get attendees of an event.
+
+    Parameters:
+    event_id (str): event id.
+    modeus_token (str): modeus token.
+
+    Returns:
+    dict: huge json with attendees.
+
+    Raises:
+    RuntimeError: if can't find key embedded.
+    """
     headers = {
         "Content-type": "application/json",
         "Authorization": f"Bearer {modeus_token}"
