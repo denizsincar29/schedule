@@ -2,6 +2,7 @@ reminder.txt
 news.txt
 news.old.txt
 *.json
+*.7z
 schedule.txt
 *.log
 cache/
