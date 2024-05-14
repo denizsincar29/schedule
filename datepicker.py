@@ -8,8 +8,8 @@ moscow=timezone("Europe/Moscow")
 months=["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
 
 class DatePicker(wx.TreeCtrl):
-    def __init__(self, parent, dt_callback):
-        super(DatePicker, self).__init__(parent, style=wx.TR_MULTIPLE)
+    def __init__(self, parent, dt_callback, *args, **kwargs):
+        super(DatePicker, self).__init__(parent, style=wx.TR_MULTIPLE, *args, **kwargs)
         self.root = self.AddRoot("root")
         years = [datetime.now().year, datetime.now().year + 1]
         self.current_year = self.AppendItem(self.root, str(years[0]))

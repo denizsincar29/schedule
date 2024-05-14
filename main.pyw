@@ -19,21 +19,27 @@ class MainWindow(wx.Frame):
         # panel
         self.panel = wx.Panel(self, -1)
         # create a hint that you can select start and end dates
-        self.hint = wx.StaticText(self.panel, label="Примечание. Вы можете выделить дату начала и конца, чтобы получить расписание на этот диапазон.")
+        self.hint = wx.StaticText(self.panel, label="Примечание. Вы можете выделить дату начала и конца, чтобы получить расписание на этот диапазон.", size=(200, 50))
         # create the date picker
         self.date_label = wx.StaticText(self.panel, label="Выберите дату")
-        self.date_picker = DatePicker(self.panel, self.schedule)  # on date change, get the schedule
-        self.control = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY)  # we will use this to display the schedule
+        # make the tree narrower. The date picker is subclass of tree control.
+        self.date_picker = DatePicker(self.panel, self.schedule)
+        self.control = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(600, 400))
         self.savetotxtbtn = wx.Button(self.panel, label="Сохранить в файл")
         self.savetotxtbtn.Bind(wx.EVT_BUTTON, self.OnSaveToTxt)
         # layout
         sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer2=wx.BoxSizer(wx.VERTICAL)
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.hint, 0, wx.ALL | wx.EXPAND, 5)
         sizer.Add(self.date_label, 0, wx.ALL | wx.EXPAND, 5)
         sizer.Add(self.date_picker, 1, wx.ALL | wx.EXPAND, 5)
-        sizer.Add(self.control, 2, wx.ALL | wx.EXPAND, 5)
-        sizer.Add(self.savetotxtbtn, 0, wx.ALL | wx.EXPAND, 5)
-        self.panel.SetSizer(sizer)
+        sizer2.Add(self.control, 0, wx.ALL | wx.EXPAND, 5)
+        sizer2.Add(self.savetotxtbtn, 0, wx.ALL | wx.EXPAND, 5)
+        hsizer.Add(sizer, 1, wx.ALL | wx.EXPAND, 5)
+        hsizer.Add(sizer2, 1, wx.ALL | wx.EXPAND, 5)
+        hsizer.AddStretchSpacer(1)  # add a stretch spacer to make the date picker narrower
+        self.panel.SetSizer(hsizer)
         self.Bind(wx.EVT_CLOSE, self.exit)
         self.CreateStatusBar()
         self.Centre()
