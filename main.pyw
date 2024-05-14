@@ -1,6 +1,7 @@
 # gui for NARFU schedule viewer.
 # WXPython
 
+from cytolk import tolk
 import wx
 from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG
 from datepicker import DatePicker
@@ -17,15 +18,20 @@ class MainWindow(wx.Frame):
         self.authed=False
         # panel
         self.panel = wx.Panel(self, -1)
+        # create a hint that you can select start and end dates
+        self.hint = wx.StaticText(self.panel, label="Примечание. Вы можете выделить дату начала и конца, чтобы получить расписание на этот диапазон.")
         # create the date picker
+        self.date_label = wx.StaticText(self.panel, label="Выберите дату")
         self.date_picker = DatePicker(self.panel, self.schedule)  # on date change, get the schedule
         self.control = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY)  # we will use this to display the schedule
         self.savetotxtbtn = wx.Button(self.panel, label="Сохранить в файл")
         self.savetotxtbtn.Bind(wx.EVT_BUTTON, self.OnSaveToTxt)
         # layout
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.date_picker, 0, wx.ALL | wx.EXPAND, 5)
-        sizer.Add(self.control, 1, wx.ALL | wx.EXPAND, 5)
+        sizer.Add(self.hint, 0, wx.ALL | wx.EXPAND, 5)
+        sizer.Add(self.date_label, 0, wx.ALL | wx.EXPAND, 5)
+        sizer.Add(self.date_picker, 1, wx.ALL | wx.EXPAND, 5)
+        sizer.Add(self.control, 2, wx.ALL | wx.EXPAND, 5)
         sizer.Add(self.savetotxtbtn, 0, wx.ALL | wx.EXPAND, 5)
         self.panel.SetSizer(sizer)
         self.Bind(wx.EVT_CLOSE, self.exit)
@@ -35,14 +41,19 @@ class MainWindow(wx.Frame):
         if (n:=news()) is not None:
             self.app.send_command(["toast", "Новость!", n, "ms-winsoundevent:Notification.Looping.Call10"])  # call10 is the best sound
             PopUpMSG(self, "Новость!", n).ShowModal()
-        self.SetStatusText("Авторизация...")
+        self.status("Авторизация...")
+
+    def status(self, text, speak=True):
+        self.SetStatusText(text)
+        if speak:
+            tolk.output(text)
 
     def OnSaveToTxt(self, event):
         # save to schedule.txt
         event.Skip()
         with open("schedule.txt", "w", encoding="UTF-8") as f:
             f.write(self.control.GetValue())
-        self.SetStatusText("Расписание сохранено в schedule.txt")
+        self.status("Расписание сохранено в schedule.txt")
 
 
 
@@ -51,7 +62,7 @@ class MainWindow(wx.Frame):
         # get the schedule for the selected date
         if len(dates)==0:
             return  # we are not on the leaf of the tree
-        self.SetStatusText("Получение расписания...")
+        self.status("Получение расписания...", False)
         self.control.SetValue("Получение расписания...")
         start_date=min(dates)
         end_date=max(dates) if len(dates)>1 else None  # if there is only one date, end_date is None
@@ -66,7 +77,7 @@ class MainWindow(wx.Frame):
                 self.ask_fullname()
             else:
                 self.authed=True
-                self.SetStatusText("Получение расписания...")
+                self.status("Получение расписания...", True)
                 self.schedule(self.date_picker.get_selected_date(), True)
         elif state==... or state==False:  #noqa
             if state==False:  #noqa
@@ -81,12 +92,12 @@ class MainWindow(wx.Frame):
             return
         self.app.send_command(["saveperson", result])
         self.authed=True
-        self.SetStatusText("Получение расписания...")
+        self.status("Получение расписания...", True)
         self.schedule(self.date_picker.get_selected_date(), True)
 
     def schedule_cb(self, schedule, toast=False):
         self.control.SetValue(schedule)
-        self.SetStatusText("Расписание получено.")
+        self.status("Расписание получено.", toast)  # if toast is True, it will be spoken
         if toast:
             self.app.send_command(["toast", "Расписание САФУ", schedule])
 
@@ -112,7 +123,7 @@ class MainWindow(wx.Frame):
             else:
                 if itsme: # if asked for my name, exit. In the future it can ask for friend's name for getting their schedule.
                     self.exit()
-        self.SetStatusText("Поиск...")
+        self.status("Поиск...")
 
     def choose_from_results(self, results):
         # results is a list of person dicts with name and other info. Return the person index
@@ -137,7 +148,7 @@ class MainWindow(wx.Frame):
             self.exit()
 
     def exit(self, event=None):
-        self.SetStatusText("Выход...")
+        self.status("Выход...")
         self.SetTitle("Выход...")
         self.app.send_command(["exit"])
         self.app.join()  # we dont cut, we wait like a gentleman
@@ -163,5 +174,6 @@ if __name__ == "__main__":
     wxapp = wx.App(False)
     if "hide" in sys.argv:  # run as daemon
         showhide = True
-    frame = MainWindow()
-    wxapp.MainLoop()
+    with tolk.tolk():  # for screen reader
+        frame = MainWindow()
+        wxapp.MainLoop()

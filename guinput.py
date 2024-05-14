@@ -147,7 +147,7 @@ class AuthInput(wx.Dialog):
 class PopUpMSG(wx.Dialog):
     # like an inputbox, but the edit box is read-only and full of text
     def __init__(self, parent, title, text, cancelbtn=False):
-        super(PopUpMSG, self).__init__(parent, title=title, size=(250, 150))
+        super(PopUpMSG, self).__init__(parent, title=title, size=(400, 200))
         self.InitUI(text, cancelbtn)
         self.Centre()
 
@@ -156,7 +156,7 @@ class PopUpMSG(wx.Dialog):
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         hbox1 = wx.BoxSizer(wx.HORIZONTAL)
-        st1 = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY)
+        st1 = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_AUTO_URL | wx.TE_RICH2, size=(400, 50))
         st1.SetValue(text)
         hbox1.Add(st1, flag=wx.RIGHT, border=8)
         vbox.Add(hbox1, flag=wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
