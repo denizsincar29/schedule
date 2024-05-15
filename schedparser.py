@@ -3,10 +3,13 @@
 # big mess: the big json object that is returned by the server
 # prepared data: the data that is returned by the server, but is already parsed
 
-from datetime import datetime
+from datetime import datetime, timedelta, date, time
+from pytz import timezone
 from copy import deepcopy
+import json
 
 STUDIES = ["08:20", "10:10", "12:00", "14:30", "16:15", "18:00", "19:40"]
+moscow=timezone("Europe/Moscow")
 
 def get_name(event_id, data):
     """
@@ -145,16 +148,23 @@ def parse_bigjson(data):
     return parsed_events
 
 
-def filter_events(data, date=None, delta=None, start_time=None, end_time=None, evt_num=None, evt_name_query=None, teacher_query=None, room_query=None, status=None):  # all kwargs are optional
+"""
+behaviour of the filter_events function:
+- if no dates or delta are passed, then all events are returned by other filters.
+if start time is passed, then all events that are before the start time are filtered out.
+if end time is passed, then all events that are after the end time are filtered out.
+if delta witho
+"""
+
+def filter_events(data, start_time=None, end_time=None, delta=None, evt_num=None, evt_name_query=None, teacher_query=None, room_query=None, status=None):  # all kwargs are optional
     """
     Filters the given data based on the provided parameters.
 
     Parameters:
     - data (list): The data to filter.
-    - date (datetime): The date to filter by.
+    - start_time (datetime): The start time to filter by.
+    - end_time (datetime): The end time to filter by.
     - delta (timedelta): The time delta to filter by.
-    - start_time (str): The start time to filter by.
-    - end_time (str): The end time to filter by.
     - evt_num (int): The event number to filter by.
     - evt_name_query (str): The event name query to filter by.
     - teacher_query (str): The teacher query to filter by.
@@ -171,15 +181,16 @@ def filter_events(data, date=None, delta=None, start_time=None, end_time=None, e
     for event in data:
         # get all dates into datetime objects, start and end time into datetime date+start_time, date+end_time
         event_date = datetime.fromisoformat(event['date'])
-        evt_st=start_time.split(":") if start_time is not None else [0, 0]
-        evt_et=end_time.split(":") if end_time is not None else [23, 59]
-        event_start_time = event_date.replace(hour=int(evt_st[0]), minute=int(evt_st[1]))  # if raises, it's other function's fault
-        event_end_time = event_date.replace(hour=int(evt_et[0]), minute=int(evt_et[1]))
-        # if event between date and date+delta
-        if date is not None and delta is not None:
-            if event_date < date or event_date > date + delta:
-                continue
-        if date is not None and delta is None and event_date != date:  # now if no delta, then only date
+        if end_time is not None and delta is not None:
+            raise ValueError("You can't pass both end_time and delta!")
+        if start_time is not None and end_time is None and delta is None:
+            end_time=datetime(5000, 1, 1) # well, it's a big enough time xD
+        if start_time is None and (end_time is not None or delta is not None):
+            start_time=datetime(yier=2020)  # we dont have that old events
+        if delta is not None:
+            end_time=start_time+delta  # now we have either both times or both Nones.
+        if start_time is not None and end_time is not None and (event_date < start_time or event_date > end_time):
+            continue
             continue
         if start_time is not None and event_start_time < start_time:
             continue
@@ -198,6 +209,42 @@ def filter_events(data, date=None, delta=None, start_time=None, end_time=None, e
         filtered_data.append(event)  # passed all filters
     return filtered_data
 
+def filter_events_by_date(data, start_time=None, end_time=None, delta=None):
+    """
+    Filters the given data based on the provided date parameters.
+
+    Parameters:
+    - data (list): The data to filter.
+    - start_time (datetime): The start time to filter by.
+    - end_time (datetime): The end time to filter by.
+    - delta (timedelta): The time delta to filter by.
+
+    Returns:
+    - list: The filtered data.
+
+    Raises:
+    - ValueError: If the data is not a list.
+    """
+    # filters the prepared data by date
+    if isinstance(data, dict):
+        raise ValueError("Hey, you passed the full schedule json, not events list!")
+    if start_time is None and end_time is None and delta is None:
+        return data  # because we will run this function regardless of the presence of the dates
+    filtered_data = []
+    for event in data:
+        event_date = datetime.fromisoformat(event['date'])
+        if end_time is not None and delta is not None:
+            raise ValueError("You can't pass both end_time and delta!")
+        if start_time is not None and end_time is None and delta is None:
+            end_time=datetime(5000, 1, 1) # well, it's a big enough time xD
+        if start_time is None and (end_time is not None or delta is not None):
+            start_time=datetime(yier=2020)  # we dont have that old events
+        if delta is not None:
+            end_time=start_time+delta  # now we have either both times or both Nones.
+        if start_time is not None and end_time is not None and (event_date < start_time or event_date > end_time):
+            continue
+        filtered_data.append(event)
+    return filtered_data
 # lets remake the old human readable parser (from parse.py)
 MSGS={
     "no_events": {
@@ -575,3 +622,231 @@ def human_diff(diff, date=None, delta=None, ifnodiff=False):
                     msg+=f"Изменен адрес аудитории на {event['address']}\n"
     return msg
 
+
+
+###########
+# remaking the old parser
+
+from dataclasses import dataclass
+
+@dataclass
+class Event:
+    event_id: int
+    event_time: int  # first, second, etc.
+    event_date: date
+    event_start: time
+    event_end: time
+    event_name: str
+    teacher: str
+    room_name: str
+    address: str
+    status: str
+    diff: int=0  # 0- no diff, 1- new, -1- removed, 2- changed
+    changed: list=[]  # list of changed fields
+
+    def __eq__(self, other):
+        return self.event_id==other.event_id
+
+    def __ne__(self, other):
+        return self.event_id!=other.event_id
+
+    def __str__(self):  # human readable in russian
+        return f"Пара {self.event_time}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+
+    def __repr__(self):  # for debugging
+        return f"Event {self.event_time}: {self.event_name}. Teacher: {self.teacher}. Room: {self.room_name}. Address: {self.address}. Status: {self.status}"
+
+    def __hash__(self):
+        return hash(self.event_id)
+
+    def __lt__(self, other):
+        return self.event_time<other.event_time
+
+    def __gt__(self, other):
+        return self.event_time>other.event_time
+
+    @property
+    def start_datetime(self):
+        return datetime.combine(self.event_date, self.event_start)
+
+    def __dict__(self):
+        return {
+            "id": self.event_id,
+            "event": self.event_time,
+            "date": self.event_date.isoformat(),
+            "start_time": self.event_start.isoformat(),
+            "end_time": self.event_end.isoformat(),
+            "name": self.event_name,
+            "teacher": self.teacher,
+            "room_name": self.room_name,
+            "address": self.address,
+            "status": self.status,
+            "diff": self.diffstr
+        }
+
+    def json(self):
+        return json.dumps(self.__dict__())
+
+    # from json
+    @classmethod
+    def from_json(cls, data):
+        diff=0
+        changed=[]
+        if data["diff"]=="-":
+            diff=-1
+        elif data["diff"]=="+":
+            diff=1
+        else:
+            diff=2
+            changed=data["diff"].split()
+        edate=date.fromisoformat(data["date"])
+        estime=time.fromisoformat(data["start_time"])
+        eetime=time.fromisoformat(data["end_time"])
+        return cls(data["id"], data["event"], edate, estime, eetime, data["name"], data["teacher"], data["room_name"], data["address"], data["status"], diff, changed)
+
+    @property
+    def diffstr(self):
+        # +, - or changed fields
+        if self.diff==1:
+            return "+"
+        elif self.diff==-1:
+            return "-"
+        elif self.diff==2:
+            return " ".join(self.changed)
+        else:
+            return ""
+
+    def get_diff(self, other) -> Event:  # other is old event
+        if self.event_id!=other.event_id:
+            return None  # different events
+        # if ids are equal, then check all fields
+        diff=2
+        if self.event_start != other.event_start:
+            self.changed.append("start_time")  # append like json key.
+        if self.event_end != other.event_end:
+            self.changed.append("end_time")
+        if self.event_date!=other.event_date:
+            self.changed.append("date")
+        if self.event_name!=other.event_name:
+            self.changed.append("name")
+        if self.teacher!=other.teacher:
+            self.changed.append("teacher")
+        if self.room_name!=other.room_name:
+            self.changed.append("room_name")
+        if self.address!=other.address:
+            self.changed.append("address")
+        if self.status!=other.status:
+            self.changed.append("status")
+        if len(self.changed)==0:
+            diff=0
+        return Event(self.event_id, self.event_time, self.event_date, self.event_start, self.event_end, self.event_name, self.teacher, self.room_name, self.address, self.status, diff, self.changed)
+
+    def human_diff(self):
+        if self.diff==0:
+            return "Изменений нет!"
+        msg=""
+        if self.diff==1:
+            msg+=f"Новая пара {self.event_time}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+        elif self.diff==-1:
+            msg+=f"Снята пара {self.event_time}: {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+        else:
+            msg+=f"Изменена пара {self.event_time}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+            for field in self.changed:
+                if field=="start_time":
+                    msg+=f"Изменено время начала пары на {self.event_start}"
+                elif field=="end_time":
+                    msg+=f"Изменено время окончания пары на {self.event_end}"
+                elif field=="date":
+                    msg+=f"Изменена дата пары на {self.event_date}"
+                elif field=="name":
+                    msg+=f"Изменено название пары на {self.event_name}"
+                elif field=="teacher":
+                    msg+=f"Изменен преподаватель на {self.teacher}"
+                elif field=="room_name":
+                    msg+=f"Изменена аудитория на {self.room_name}"
+                elif field=="address":
+                    msg+=f"Изменен адрес аудитории на {self.address}"
+                elif field=="status":
+                    msg+=f"Изменен статус на {self.status}"
+        return msg
+    
+    def humanize(self):  # alias for __str__
+        return str(self)
+    
+
+class Events:  # if this were rust, it would be a trait for Vec<Event>
+    def __init__(self, events):
+        self.events=events
+
+
+    def __iter__(self):
+        return iter(self.events)
+
+    def __len__(self):
+        return len(self.events)
+
+    def __getitem__(self, index):
+        return self.events[index]
+
+    def __setitem__(self, index, value):
+        self.events[index]=value
+
+    def __delitem__(self, index):
+        del self.events[index]
+
+    def __str__(self):
+        return "\n".join([str(event) for event in self.events])
+
+    def __repr__(self):
+        return f"Events {self.events}"
+
+    def __contains__(self, item):
+        return item in self.events
+
+    def __eq__(self, other):
+        return self.events==other.events
+
+    def __ne__(self, other):
+        return self.events!=other.events
+
+    def __add__(self, other):
+        return self.events+other.events
+
+    def __sub__(self, other):
+        return self.events-other.events
+
+    def __list__(self):  # use it to get the list of dictified events
+        return [event.__dict__() for event in self.events]
+
+    def json(self):
+        return json.dumps(self.__list)
+
+    @classmethod
+    def from_json(cls, data):
+        return cls([Event.from_json(event) for event in data])
+
+    def get_event_by_id(self, event_id):
+        for event in self.events:
+            if event.event_id==event_id:
+                return event
+        return None
+
+    def get_events_by_date(self, date):
+        return [event for event in self.events if event.event_date==date]
+
+    def get_events_by_time(self, time):
+        return [event for event in self.events if event.event_time==time]
+
+    def get_events_by_name(self, name):
+        return [event for event in self.events if name in event.event_name]
+
+    def get_events_by_teacher(self, teacher):
+        return [event for event in self.events if teacher in event.teacher]
+
+    def get_events_by_room(self, room):
+        return [event for event in self.events if room in event.room_name]
+
+    def get_events_by_status(self, status):
+        return [event for event in self.events if status in event.status]
+
+    def filter_events(self, start_time=None, end_time=None, delta=None, evt_num=None, evt_name_query=None, teacher_query=None, room_query=None, status=None):
