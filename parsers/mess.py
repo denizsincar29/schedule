@@ -1,4 +1,4 @@
-def _get_name(event_id, data):
+def get_name(event_id, data):
     """
     Retrieves the name of an event based on its ID from the given data.
 
@@ -17,7 +17,7 @@ def _get_name(event_id, data):
             break
     return name
 
-def _get_teacher(event_id, data):
+def get_teacher(event_id, data):
     """
     Retrieves the name of the teacher for an event based on its ID from the given data.
 
@@ -51,7 +51,7 @@ def _get_teacher(event_id, data):
             full_name = person['fullName']
             return full_name
 
-def _get_room(event_id, data):
+def get_room(event_id, data):
     # internal. works with the big mess
     event_locations = data['event-locations']
     event_rooms = data['event-rooms']	

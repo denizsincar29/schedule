@@ -150,9 +150,18 @@ class People:
     - people (list): The list of people.
     - current (str): The current person's ID.
     """
-    def __init__(self, people: list, current: str=""):
+    def __init__(self, people: list, current: str="", friend: str=""):
+        """
+        Initializes the people.
+
+        Parameters:
+        - people (list): The list of people.
+        - current (str): The current person's ID.
+        friend (str): The friend's ID (to specify another person to get his/her data).
+        """
         self.people=people
         self._current=current  # current person index
+        self._friend=friend
 
     #region magic methods
     def __iter__(self):
@@ -211,6 +220,14 @@ class People:
             raise ValueError("No person with this id")
         self._current=pid
 
+    @property
+    def friend(self):
+        return self.get_person_by_id(self._friend)
+    
+    @friend.setter
+    def friend(self, pid):
+        self._friend=pid  # we can have no friend, so no need to check
+
     def json(self) -> str:
         """Returns the people as a JSON string."""
         return json.dumps(self.__list)
@@ -245,7 +262,6 @@ class People:
                 parsed_persons.append(Employee(person_id, person['fullName'], start_date, end_date, person_info['groupName']))
         return cls(parsed_persons)
 
-
     @classmethod
     def from_prepared_json(cls, data: dict) -> Self:
         """
@@ -257,15 +273,18 @@ class People:
         Returns:
         - People: The people parsed from the data.
         """
-        current=data["current"]
+        current=data["current"]  # we save only current person id, not friend
         people=data["people"]
         return cls([Person._from_prepared(person) for person in people], current)
 
     @classmethod
     def from_cache(cls) -> Self:
         """loads people from cache"""
-        with open("people.json", "r") as f:
-            data=json.load(f)
+        try:
+            with open("people.json", "r") as f:
+                data=json.load(f)
+        except FileNotFoundError:
+            return cls([])
         return cls.from_prepared_json(data)
 
     def to_cache(self):

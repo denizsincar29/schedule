@@ -2,6 +2,8 @@ from datetime import date, time, datetime
 from pytz import timezone
 from dataclasses import dataclass, field
 from copy import deepcopy
+from typing import Self
+import mess
 import json
 
 STUDIES = ["08:20", "10:10", "12:00", "14:30", "16:15", "18:00", "19:40"]
@@ -266,6 +268,8 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         del self.events[index]
 
     def __str__(self):  # human readable
+        if len(self.events)==0:
+            return "Пар нет!"
         return "\n".join([str(event) for event in self.events])
 
     def __repr__(self):  # for debugging
@@ -315,19 +319,20 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
             data=data["_embedded"]
         if "events" not in data:
             return cls([])
-        events = data['events']
         parsed_events = []
-        for event in Events:
+        events = data['events']
+        for event in events:
             event_id = event['id']
-            event_name = _get_name(event['_links']['course-unit-realization']['href'][1:], data)
+            event_name = mess.get_name(event['_links']['course-unit-realization']['href'][1:], data)
             event_start = datetime.fromisoformat(event['start']).time()
             event_end = datetime.fromisoformat(event['end']).time()
             event_date = datetime.fromisoformat(event['start']).replace(hour=0, minute=0).isoformat()
             event_num = STUDIES.index(event_start) + 1
             event_status = event['holdingStatus']['name']
-            room_name, address = _get_room(event_id, data)
-            teacher = _get_teacher(event_id, data)
+            room_name, address = mess.get_room(event_id, data)
+            teacher = mess.get_teacher(event_id, data)
             parsed_events.append(Event(event_id, event_num, event_date, event_start, event_end, event_name, teacher, room_name, address, event_status))  # diff is 0 by default
+        return cls(parsed_events)
 
     @classmethod
     def from_prepared_json(cls, data: dict) -> Self:
@@ -354,16 +359,31 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The collection of events created from the cache.
         """
-
         #cache/monthnumber.personid.json
-        with open(f"cache/{month}.{person_id}.json", "r") as f:
-            data=json.load(f)
+        try:
+            with open(f"cache/{month}.{person_id}.json", "r") as f:
+                data=json.load(f)
+        except FileNotFoundError:
+            return cls([])
         return cls.from_prepared_json(data)
 
-    def to_cache(self, month: int, person_id: str):
-        """put the events to the cache."""
+    def to_cache(self, month: int, person_id: str) -> Self:
+        """
+        put the events to the cache.
+
+        Parameters:
+        - month (int): The month number.
+        - person_id (str): The person's id.
+
+        Returns:
+        - Events: The collection of events representing difference between the old and new events.
+        """
+        # read from cache to differentiate the events
+        old_events=Events.from_cache(month, person_id)  # attention! recursive call
         with open(f"cache/{month}.{person_id}.json", "w") as f:
             json.dump(self.__list__(), f)
+        return self.diff(old_events)
+
 
     def get_event_by_id(self, event_id: str) -> Event:
         """
@@ -489,6 +509,19 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         - Events: The events with the given status.
         """
         return Events([event for event in self.events if status.lower() in event.status.lower()])
+
+    def overlap(self, other: Self) -> Self:
+        """
+        Returns the overlap between this collection of events and another collection of events.
+
+        Parameters:
+        - other (Events): The other collection of events to compare with.
+
+        Returns:
+        - Events: The overlap between the two collections of events.
+        """
+        return Events([event for event in self.events if event in other.events])
+
 
     def diff(self, other: Self) -> Self:
         """
