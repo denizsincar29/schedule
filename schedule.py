@@ -62,8 +62,8 @@ class Schedule:
         self.expire=datetime.now()-timedelta(seconds=10)
         self.results=schedparser.People()
         self.people=schedparser.People()
-        self.current_person=None
-        self.friend=None
+        self.current_person=schedparser.NoOne()
+        self.friend=schedparser.NoOne()
         self.last_events=[]
         self.last_msg=""
         self.config=Config()
@@ -99,29 +99,14 @@ class Schedule:
             self.expire=datetime.now()+timedelta(hours=12)  # modeus token lives for 12 hours and dies!
             self.save_token()
 
-    def cache_people(self, people=[]):
+    def cache_people(self, people=schedparser.People():
         """
         caches people info to people.json.
 
         Parameters:
         people (list): List of people to cache. If not given, it will cache self.people. If given, it will append to self.people and cache it. If it's empty, it will cache self.people. If it's None, it will cache self.people but won't change it.
         """
-        # save self.people to cache, but append and remove duplicates
-        if people==[] or people is None:
-            people=deepcopy(self.people)  # when self.people changes, dont change people.
-        else:
-            people=deepcopy(people)  # or it will change the original list
-        current_person=self.current_person
-        self.load_people()
-        if self.current_person is None:
-            self.current_person=current_person  # retrieve back
-        ids=[p["id"] for p in people]
-        for person in self.people:
-            if person["id"] not in ids:
-                people.append(person)
-        with open("people.json", "w", encoding="UTF-8") as f:
-            json.dump({"me": self.current_person, "people": people}, f, ensure_ascii=False, indent=2)
-
+        people.to_cache()
     def save_current_person(self, id: str=...):
         """
         saves person info to people.json.
