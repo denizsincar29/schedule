@@ -60,8 +60,8 @@ class Schedule:
         self.password=password
         self.token=...
         self.expire=datetime.now()-timedelta(seconds=10)
-        self.results=[]  # for searching people
-        self.people=[]  # for caching people. Dont touch results, it's for searching
+        self.results=schedparser.People()
+        self.people=schedparser.People()
         self.current_person=None
         self.friend=None
         self.last_events=[]

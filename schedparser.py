@@ -1,4 +1,4 @@
-# a new, more efficient parser for the schedule
+# a new, more efficient parser for the schedule. upd. even more efficient, because we use dataclasses and jsons now.
 # terms:
 # big mess: the big json object that is returned by the server
 # prepared data: the data that is returned by the server, but is already parsed
@@ -7,11 +7,13 @@ from datetime import datetime, timedelta, date, time
 from pytz import timezone
 from copy import deepcopy
 import json
+from dataclasses import dataclass, field
 
 STUDIES = ["08:20", "10:10", "12:00", "14:30", "16:15", "18:00", "19:40"]
 moscow=timezone("Europe/Moscow")
 
-def get_name(event_id, data):
+#region big mess helper functions
+def _get_name(event_id, data):
     """
     Retrieves the name of an event based on its ID from the given data.
 
@@ -30,9 +32,7 @@ def get_name(event_id, data):
             break
     return name
 
-
-
-def get_teacher(event_id, data):
+def _get_teacher(event_id, data):
     """
     Retrieves the name of the teacher for an event based on its ID from the given data.
 
@@ -66,18 +66,8 @@ def get_teacher(event_id, data):
             full_name = person['fullName']
             return full_name
 
-def get_room(event_id, data):
-    """
-    Retrieves the room name and address for an event based on its ID from the given data.
-
-    Parameters:
-    - event_id (int): The ID of the event to retrieve the room for.
-    - data (dict): The data from the server.
-
-    Returns:
-    - tuple or None: A tuple containing the room name and address if found, None otherwise.
-    """
-    # works with the big mess
+def _get_room(event_id, data):
+    # internal. works with the big mess
     event_locations = data['event-locations']
     event_rooms = data['event-rooms']	
     rooms = data['rooms']
@@ -96,313 +86,6 @@ def get_room(event_id, data):
                             room_name = room['name']
                             address = room['building']['address'].replace("обл. Архангельская, г. Архангельск, ", "")  # we all know that safu is in arkhangel'sk xD
                             return (room_name, address)
-
-
-def parse_bigjson(data):
-    """
-    Parses the given data from the server into a more readable json format.
-
-    Parameters:
-    - data (dict): The data from the server.
-
-    Returns:
-    - list: The parsed data containing the events.
-    """
-    # transforms the big mess into prepared data
-    # normally data is value of _embedded key, but if not, then set data=data["_embedded"]
-    if "_embedded" in data:
-        data = data["_embedded"]
-    if "events" not in data:
-        return []  # no events
-    events = data['events']
-    parsed_events = []
-    
-    for event in events:
-        event_id = event['id']
-        event_name = get_name(event['_links']['course-unit-realization']['href'][1:], data)
-        event_start = datetime.fromisoformat(event['start']).strftime("%H:%M")
-        event_end = datetime.fromisoformat(event['end']).strftime("%H:%M")
-        event_date = datetime.fromisoformat(event['start']).replace(hour=0, minute=0).isoformat()
-        event_time = STUDIES.index(event_start) + 1
-        event_status = event['holdingStatus']['name']
-        room_name, address = get_room(event_id, data)
-        teacher = get_teacher(event_id, data)
-        # datetime object is not JSON serializable
-        event_data = {
-            "id": event_id,  # unique identifier
-            "event": event_time,
-            "date": event_date,  # sometimes needed for quick filtering
-            "start_time": event_start,
-            "end_time": event_end,
-            "name": event_name,
-            "teacher": teacher,
-            "room_name": room_name,
-            "address": address,
-            "status": event_status,
-            "diff": "+"  # used for diffing. "+"- new, "-"- removed, ""- no diff, other string: space separated list of fields that are different
-        }
-        
-        parsed_events.append(event_data)
-    # sort the events by date and time
-    parsed_events = sorted(parsed_events, key=lambda x: (datetime.fromisoformat(x['date']), x['event']))
-    return parsed_events
-
-
-"""
-behaviour of the filter_events function:
-- if no dates or delta are passed, then all events are returned by other filters.
-if start time is passed, then all events that are before the start time are filtered out.
-if end time is passed, then all events that are after the end time are filtered out.
-if delta witho
-"""
-
-def filter_events(data, start_time=None, end_time=None, delta=None, evt_num=None, evt_name_query=None, teacher_query=None, room_query=None, status=None):  # all kwargs are optional
-    """
-    Filters the given data based on the provided parameters.
-
-    Parameters:
-    - data (list): The data to filter.
-    - start_time (datetime): The start time to filter by.
-    - end_time (datetime): The end time to filter by.
-    - delta (timedelta): The time delta to filter by.
-    - evt_num (int): The event number to filter by.
-    - evt_name_query (str): The event name query to filter by.
-    - teacher_query (str): The teacher query to filter by.
-    - room_query (str): The room query to filter by.
-    - status (str): The status to filter by.
-
-    Returns:
-    - list: The filtered data.
-    """
-    # filters the prepared data
-    if isinstance(data, dict):
-        raise ValueError("Hey, you passed the full schedule json, not events list!")
-    filtered_data = []
-    for event in data:
-        # get all dates into datetime objects, start and end time into datetime date+start_time, date+end_time
-        event_date = datetime.fromisoformat(event['date'])
-        if end_time is not None and delta is not None:
-            raise ValueError("You can't pass both end_time and delta!")
-        if start_time is not None and end_time is None and delta is None:
-            end_time=datetime(5000, 1, 1) # well, it's a big enough time xD
-        if start_time is None and (end_time is not None or delta is not None):
-            start_time=datetime(yier=2020)  # we dont have that old events
-        if delta is not None:
-            end_time=start_time+delta  # now we have either both times or both Nones.
-        if start_time is not None and end_time is not None and (event_date < start_time or event_date > end_time):
-            continue
-            continue
-        if start_time is not None and event_start_time < start_time:
-            continue
-        if end_time is not None and event_end_time > end_time:
-            continue
-        if evt_num is not None and event['event'] != evt_num:
-            continue
-        if evt_name_query is not None and evt_name_query.lower() not in event['name'].lower():
-            continue
-        if teacher_query is not None and teacher_query.lower() not in event['teacher'].lower():
-            continue
-        if room_query is not None and room_query.lower() not in event['room_name'].lower():
-            continue
-        if status is not None and status.lower() not in event['status'].lower():
-            continue
-        filtered_data.append(event)  # passed all filters
-    return filtered_data
-
-def filter_events_by_date(data, start_time=None, end_time=None, delta=None):
-    """
-    Filters the given data based on the provided date parameters.
-
-    Parameters:
-    - data (list): The data to filter.
-    - start_time (datetime): The start time to filter by.
-    - end_time (datetime): The end time to filter by.
-    - delta (timedelta): The time delta to filter by.
-
-    Returns:
-    - list: The filtered data.
-
-    Raises:
-    - ValueError: If the data is not a list.
-    """
-    # filters the prepared data by date
-    if isinstance(data, dict):
-        raise ValueError("Hey, you passed the full schedule json, not events list!")
-    if start_time is None and end_time is None and delta is None:
-        return data  # because we will run this function regardless of the presence of the dates
-    filtered_data = []
-    for event in data:
-        event_date = datetime.fromisoformat(event['date'])
-        if end_time is not None and delta is not None:
-            raise ValueError("You can't pass both end_time and delta!")
-        if start_time is not None and end_time is None and delta is None:
-            end_time=datetime(5000, 1, 1) # well, it's a big enough time xD
-        if start_time is None and (end_time is not None or delta is not None):
-            start_time=datetime(yier=2020)  # we dont have that old events
-        if delta is not None:
-            end_time=start_time+delta  # now we have either both times or both Nones.
-        if start_time is not None and end_time is not None and (event_date < start_time or event_date > end_time):
-            continue
-        filtered_data.append(event)
-    return filtered_data
-# lets remake the old human readable parser (from parse.py)
-MSGS={
-    "no_events": {
-        False: "На этот промежуток времени пар нет!",
-        True: "Пар нет!"  # laconic
-    },
-    "no_diff": {
-        False: "Изменений нет!",
-        True: "Изменений нет!"  # laconic
-    },
-    "no_events_multiday": {
-        False: "В эти дни пар нет!",
-        True: "В эти дни пар нет!"  # laconic
-    },
-    "online": {
-        False: "Проходит онлайн на сайте сафу",
-        True: "онлайн"
-    },
-    "in_room": {
-        False: "Проходит в аудитории: {room_name}. По адресу: {address}",
-        True: "в аудитории: {room_name}"
-    }
-}
-
-def get_event_by_id(event_id, data):
-    """
-    Retrieves an event based on its ID from the given data.
-
-    Parameters:
-    - event_id (int): The ID of the event to retrieve.
-    - data (list): The prepared data containing the events.
-
-    Returns:
-    - dict or None: The event if found, None otherwise.
-    """
-    # returns the event by its id
-    for event in data:
-        if event['id'] == event_id:  # it's modeus's resp that the id is unique xD
-            return event
-    return None
-
-
-def humanize_event_id(event_id, data, laconic=False):
-    """
-    Transforms an event into a human-readable format based on its ID.
-
-    Parameters:
-    - event_id (int): The ID of the event to humanize.
-    - data (list): The prepared data containing the events.
-    - laconic (bool): Whether to use laconic mode.
-
-    Returns:
-    - str: The humanized event.
-    """
-    # parsing from the prepared data
-    event = get_event_by_id(event_id, data)
-    if event is None:
-        return "Не найдено. Обратитесь к криворукому программисту."  # xDDDDDDDDDD
-    if laconic:
-        msg=f"Пара {event['event']}: {event['name']}. Преподаватель {event['teacher']}. {MSGS['in_room'][laconic].format(room_name=event['room_name']) if event['room_name'] is not None else MSGS['online'][laconic]}"
-    else:
-        # пара 1: с 08:20 до 10:00. Математический анализ. Преподаватель Иванов И.И. Проходит в аудитории: 101. По адресу: ул. Ленина, 1
-        msg=f"Пара {event['event']}: с {event['start_time']} до {event['end_time']}. {event['name']}. Преподаватель {event['teacher']}. {MSGS['in_room'][laconic].format(room_name=event['room_name'], address=event['address']) if event['room_name'] is not None else MSGS['online'][laconic]}"
-    return msg
-
-def multiday(events):
-    """
-    Retrieves all dates of the events.
-
-    Parameters:
-    - events (list): The events to retrieve the dates for.
-
-    Returns:
-    - set: The dates of the events.
-    """
-    # return all dates of the events by set comprehension
-    dates={event['date'] for event in events}
-    return dates
-
-def humanize_events(events, laconic=False):
-    """
-    Transforms a list of events into a human-readable format.
-
-    Parameters:
-    - events (list): The events to humanize.
-    - laconic (bool): Whether to use laconic mode.
-
-    Returns:
-    - str: The humanized events.
-    """
-    # parsing from the prepared data
-    if len(events) == 0:
-        return MSGS['no_events'][laconic]
-    multi=len(multiday(events))>1
-    first_event_date=datetime.fromisoformat(events[0]['date']).strftime('%d/%m')
-    msg="" if multi else first_event_date+":\n"
-    # if day changes or first event in multiday, msg+=date, but separated by \n\n
-    prevdate=None
-    for event in events:
-        if multi:
-            if prevdate!=event['date']:
-                msg+='\n\n' if prevdate is not None else ""
-                prevdate=event['date']
-                msg+=f"{datetime.fromisoformat(event['date']).strftime('%d/%m')}:\n"
-        msg+=humanize_event_id(event['id'], events, laconic)+'\n'
-    return msg
-
-def parse_people(data):
-    """
-    Parses the given list of people (students or teachers) into a more readable format.
-
-    Parameters:
-    - data (dict): The data containing the people information.
-
-    Returns:
-    - list: The parsed people.
-    """
-    # big mess to prepared data
-    #students=data['students'] if 'students' in data else []  # there can be no students or employees
-    #employees=data['employees'] if 'employees' in data else []
-    persons=data['persons'] if 'persons' in data else []
-    if len(persons)==0:
-        return []
-    parsed_persons=[]
-    for person in persons:
-        person_id=person['id']
-        person_type, person_info=get_person_info(person_id, data)
-        # if person_type is None, then the developer messed up with everything xD
-        if person_type is None:
-            raise ValueError("Json is strange! If you put in the person id right from this json, than json is terribly wrong or corrupted.")
-        if person_type=="student":
-            specialty=person_info['specialtyName']
-            profile=person_info['specialtyProfile']
-            start_date=person_info['learningStartDate']
-            end_date=person_info['learningEndDate']
-            parsed_persons.append({
-                "id": person_id,
-                "type": "student",
-                "name": person['fullName'],
-                "specialty": specialty,
-                "profile": profile,
-                "start_date": start_date,
-                "end_date": end_date
-            })
-        elif person_type=="employee":
-            group=person_info['groupName']
-            date_in=person_info['dateIn']
-            date_out=person_info['dateOut']
-            parsed_persons.append({
-                "id": person_id,
-                "type": "employee",
-                "name": person['fullName'],
-                "group": group,
-                "date_in": date_in,
-                "date_out": date_out
-            })
-    return parsed_persons  # oh my god, i forgot to return the parsed persons and got many NoneType errors
-
 
 def get_person_info(person_id, data):
     """
@@ -432,207 +115,15 @@ def get_person_info(person_id, data):
     return None, None  # incorrect id
 
 
-def get_person_by_id(person_id, data):
-    """
-    Retrieves a person based on their ID from the given prepared data.
+#endregion
 
-    Parameters:
-    - person_id (int): The ID of the person to retrieve.
-    - data (list): The prepared data containing the people information.
-
-    Returns:
-    - dict or None: The person if found, None otherwise.
-    """
-    for person in data:
-        if person['id'] == person_id:
-            return person
-    return None
-
-
-def humanize_person(person_id, data):
-    """
-    Transforms person info into a human-readable format based on their ID.
-
-    Parameters:
-
-    - person_id (int): The ID of the person to humanize.
-    - data (list): The prepared data containing the people information.
-
-    Returns:
-    - str: The humanized person info.
-    """
-    # works with the prepared data
-    person = get_person_by_id(person_id, data)
-    if person is None:
-        return ""
-    if person['type'] == "student":
-        msg=f"{person['name']}: {person['specialty']}, {person['profile']}."
-        if person['start_date'] is not None:
-            msg+=f" Учится с {datetime.fromisoformat(person['start_date']).strftime('%d/%m/%Y')}"
-        if person['end_date'] is not None:
-            msg+=f" по {datetime.fromisoformat(person['end_date']).strftime('%d/%m/%Y')}."
-        else:
-            msg+="."
-    elif person['type'] == "employee":
-        msg=f"{person['name']}: {person['group']}."
-        if person['date_in'] is not None:
-            msg+=f" Работает с {datetime.fromisoformat(person['date_in']).strftime('%d/%m/%Y')}"
-        if person['date_out'] is not None:
-            msg+=f" по {datetime.fromisoformat(person['date_out']).strftime('%d/%m/%Y')}."
-        else:
-            msg+="."
-    return msg
-
-
-def events_equality(event1, event2):
-    """
-    Compares two events and returns the fields that are not equal.
-
-    Parameters:
-    - event1 (dict): The first event to compare.
-    - event2 (dict): The second event to compare.
-
-    Returns:
-    - list: The fields that are not equal.
-    """
-    # if ids are not equal, []. If ids are equal but some fields are not, then return the fields that are not equal. If all fields are equal, then return ...
-    if event1==event2:
-        return ...  # dotdotdot!
-    if event1['id']!=event2['id']:
-        return []
-    diff=[]
-    if event1['event']!=event2['event']:
-        diff.append("event")
-    if event1['date']!=event2['date']:
-        diff.append("date")
-    if event1['start_time']!=event2['start_time']:
-        diff.append("start_time")
-    if event1['end_time']!=event2['end_time']:
-        diff.append("end_time")
-    if event1['name']!=event2['name']:
-        diff.append("name")
-    if event1['teacher']!=event2['teacher']:
-        diff.append("teacher")
-    if event1['room_name']!=event2['room_name']:
-        diff.append("room_name")
-    if event1['address']!=event2['address']:
-        diff.append("address")
-    if event1['status']!=event2['status']:
-        diff.append("status")
-    return diff
-
-
-def diff(old, new):
-    """
-    Compares two lists of events and returns the difference between them.
-
-    Parameters:
-    - old (list): The old list of events.
-    - new (list): The new list of events.
-
-    Returns:
-    - list: The difference between the two lists in the prepared data format with the diff key.
-    """
-    # returns the difference between two lists of events in the prepared data format with the diff key. Return only added, removed and changed events
-    old=deepcopy(old)
-    new=deepcopy(new)
-    events=[]
-    # get all ids
-    ids_old={event['id'] for event in old}
-    ids_new={event['id'] for event in new}
-    # get added and removed
-    added_ids=ids_new-ids_old
-    removed_ids=ids_old-ids_new
-    # append the events with the diff key
-    for event in added_ids:
-        event=get_event_by_id(event, new)
-        event['diff']="+"
-        events.append(event)
-    for event in removed_ids:
-        event=get_event_by_id(event, old)
-        event['diff']="-"
-        events.append(event)
-    # get changed events
-    for event in ids_old.intersection(ids_new):
-        event1=get_event_by_id(event, old)
-        event2=get_event_by_id(event, new)
-        diff=events_equality(event1, event2)
-        if diff!=... and diff!=[]:  # empty list is no diff, dotdotdot is all fields are equal
-            event2['diff']=" ".join(diff)
-            events.append(event2)
-    return events
-
-def human_diff(diff, date=None, delta=None, ifnodiff=False):
-    """
-    Transforms the difference between two lists of events into a human-readable format.
-
-    Parameters:
-    - diff (list): The difference between the two lists of events (returned by diff function).
-    - date (datetime): The date to filter by.
-    - delta (timedelta): The time delta to filter by.
-    - ifnodiff (bool): Whether to return a message if there is no difference.
-
-    Returns:
-    - str: The humanized difference.
-    """
-    # returns a human readable diff
-    if len(diff)==0:
-        if ifnodiff:
-            return MSGS['no_diff'][True]
-        else:
-            return ""  # normally we ssend notification only if there is a diff
-    msg=""
-    multi=len(multiday(diff))>1
-    # if day changes or first event in multiday, msg+=date, but separated by \n\n
-    prevdate=None
-    for event in diff:
-        if multi:
-            if prevdate is None:
-                prevdate=event['date']
-            elif prevdate!=event['date']:
-                msg+='\n\n'
-                prevdate=event['date']
-            msg+=f"{datetime.fromisoformat(event['date']).strftime('%d/%m')}: "
-        if event['diff']=="+":
-            msg+=f"Новая пара {event['event']}: с {event['start_time']} до {event['end_time']}. {event['name']}. Преподаватель {event['teacher']}. {MSGS['in_room'][False].format(room_name=event['room_name'], address=event['address']) if event['room_name'] is not None else MSGS['online'][False]}\n"
-        elif event['diff']=="-":
-            msg+=f"Снята пара {event['event']}: {event['name']} с Преподавателем {event['teacher']}. {MSGS['in_room'][True].format(room_name=event['room_name'], address=event['address']) if event['room_name'] is not None else MSGS['online'][True]}\n"  # if event removed, then no need to show full info.
-        else:
-            # if only status changed, then no need to show it
-            if event['diff']=="status":
-                continue # we're done here
-            msg+=f"Изменена пара {event['event']}: с {event['start_time']} до {event['end_time']}. {event['name']}. Преподаватель {event['teacher']}. {MSGS['in_room'][False].format(room_name=event['room_name'], address=event['address']) if event['room_name'] is not None else MSGS['online'][False]}\n"
-            # изменился e.g. преподаватель, аудитория
-            for field in event['diff'].split():
-                if field=="event":
-                    msg+=f"Изменено время пары с {event['start_time']} до {event['end_time']}\n"
-                elif field=="date":
-                    msg+=f"Изменена дата пары на {datetime.fromisoformat(event['date']).strftime('%d/%m')}\n"
-                elif field=="start_time":
-                    msg+=f"Изменено время начала пары на {event['start_time']}\n"
-                elif field=="end_time":
-                    msg+=f"Изменено время окончания пары на {event['end_time']}\n"
-                elif field=="name":
-                    msg+=f"Изменено название пары на {event['name']}\n"
-                elif field=="teacher":
-                    msg+=f"Изменен преподаватель на {event['teacher']}\n"
-                elif field=="room_name":
-                    msg+=f"Изменена аудитория на {event['room_name']}\n"
-                elif field=="address":
-                    msg+=f"Изменен адрес аудитории на {event['address']}\n"
-    return msg
-
-
-
-###########
-# remaking the old parser
-
-from dataclasses import dataclass
+def combine_moscow(date, time):  # i am from russia, we are lazy to write this every time xD!
+    return moscow.localize(datetime.combine(date, time))
 
 @dataclass
 class Event:
     event_id: int
-    event_time: int  # first, second, etc.
+    event_num: int  # first, second, etc.
     event_date: date
     event_start: time
     event_end: time
@@ -642,7 +133,7 @@ class Event:
     address: str
     status: str
     diff: int=0  # 0- no diff, 1- new, -1- removed, 2- changed
-    changed: list=[]  # list of changed fields
+    changed: list=field(default_factory=list)  # list of changed fields
 
     def __eq__(self, other):
         return self.event_id==other.event_id
@@ -651,28 +142,33 @@ class Event:
         return self.event_id!=other.event_id
 
     def __str__(self):  # human readable in russian
-        return f"Пара {self.event_time}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+        return f"Пара {self.event_num}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
 
     def __repr__(self):  # for debugging
-        return f"Event {self.event_time}: {self.event_name}. Teacher: {self.teacher}. Room: {self.room_name}. Address: {self.address}. Status: {self.status}"
+        return f"Event {self.event_num}: {self.event_name}. Teacher: {self.teacher}. Room: {self.room_name}. Address: {self.address}. Status: {self.status}"
 
     def __hash__(self):
         return hash(self.event_id)
 
     def __lt__(self, other):
-        return self.event_time<other.event_time
+        # end times will be shifted exactly same as start times, so we can compare only start times
+        return self.start_datetime<other.start_datetime
 
     def __gt__(self, other):
-        return self.event_time>other.event_time
+        return self.start_datetime>other.start_datetime
 
     @property
     def start_datetime(self):
-        return datetime.combine(self.event_date, self.event_start)
+        return combine_moscow(self.event_date, self.event_start)
+
+    @property
+    def end_datetime(self):
+        return combine_moscow(self.event_date, self.event_end)
 
     def __dict__(self):
         return {
             "id": self.event_id,
-            "event": self.event_time,
+            "event": self.event_num,
             "date": self.event_date.isoformat(),
             "start_time": self.event_start.isoformat(),
             "end_time": self.event_end.isoformat(),
@@ -687,9 +183,8 @@ class Event:
     def json(self):
         return json.dumps(self.__dict__())
 
-    # from json
     @classmethod
-    def from_json(cls, data):
+    def from_prepared(cls, data):
         diff=0
         changed=[]
         if data["diff"]=="-":
@@ -716,12 +211,12 @@ class Event:
         else:
             return ""
 
-    def get_diff(self, other) -> Event:  # other is old event
+    def get_diff(self, other) -> "Event":
         if self.event_id!=other.event_id:
             return None  # different events
         # if ids are equal, then check all fields
         diff=2
-        if self.event_start != other.event_start:
+        if self.event_start != other.event_start:  # we can omit checking the event num, because it dependends on the start time
             self.changed.append("start_time")  # append like json key.
         if self.event_end != other.event_end:
             self.changed.append("end_time")
@@ -739,18 +234,18 @@ class Event:
             self.changed.append("status")
         if len(self.changed)==0:
             diff=0
-        return Event(self.event_id, self.event_time, self.event_date, self.event_start, self.event_end, self.event_name, self.teacher, self.room_name, self.address, self.status, diff, self.changed)
+        return Event(self.event_id, self.event_num, self.event_date, self.event_start, self.event_end, self.event_name, self.teacher, self.room_name, self.address, self.status, diff, self.changed)
 
     def human_diff(self):
         if self.diff==0:
             return "Изменений нет!"
         msg=""
         if self.diff==1:
-            msg+=f"Новая пара {self.event_time}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+            msg+=f"Новая пара {self.event_num}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
         elif self.diff==-1:
-            msg+=f"Снята пара {self.event_time}: {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+            msg+=f"Снята пара {self.event_num}: {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
         else:
-            msg+=f"Изменена пара {self.event_time}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+            msg+=f"Изменена пара {self.event_num}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
             for field in self.changed:
                 if field=="start_time":
                     msg+=f"Изменено время начала пары на {self.event_start}"
@@ -772,13 +267,28 @@ class Event:
     
     def humanize(self):  # alias for __str__
         return str(self)
+
+    def __contains__(self, item):
+        return item.lower in str(self).lower()
+
+    def mark_new(self):
+        self.diff=1
+        return self  # for setting the diff in one line
     
+    def mark_removed(self):
+        self.diff=-1
+        return self
+    
+    def mark_changed(self, changed_fields):
+        self.diff=2
+        self.changed=changed_fields
+        return self
 
 class Events:  # if this were rust, it would be a trait for Vec<Event>
     def __init__(self, events):
         self.events=events
 
-
+    #begin magic methods
     def __iter__(self):
         return iter(self.events)
 
@@ -794,13 +304,16 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
     def __delitem__(self, index):
         del self.events[index]
 
-    def __str__(self):
+    def __str__(self):  # human readable
         return "\n".join([str(event) for event in self.events])
 
-    def __repr__(self):
+    def __repr__(self):  # for debugging
         return f"Events {self.events}"
 
     def __contains__(self, item):
+        # filter by query. If string, then return bool whether it is in all event strings
+        if isinstance(item, str):  # if "Воронцов" in events, it will return True if it is in any event
+            return any([item in event for event in self.events])
         return item in self.events
 
     def __eq__(self, other):
@@ -810,43 +323,353 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         return self.events!=other.events
 
     def __add__(self, other):
-        return self.events+other.events
+        # add but remove duplicates
+        evt_set=set(self.events+other.events)
+        return Events(list(evt_set))
 
     def __sub__(self, other):
-        return self.events-other.events
+        # return self.events-other.events # we cannot sub lists
+        return Events([event for event in self.events if event not in other.events])
 
     def __list__(self):  # use it to get the list of dictified events
         return [event.__dict__() for event in self.events]
+    #end magic methods
 
     def json(self):
         return json.dumps(self.__list)
 
     @classmethod
-    def from_json(cls, data):
+    def from_big_mess(cls, data):
+        if "_embedded" in data:
+            data=data["_embedded"]
+        if "events" not in data:
+            return cls([])
+        events = data['events']
+        parsed_events = []
+        for event in Events:
+            event_id = event['id']
+            event_name = _get_name(event['_links']['course-unit-realization']['href'][1:], data)
+            event_start = datetime.fromisoformat(event['start']).time()
+            event_end = datetime.fromisoformat(event['end']).time()
+            event_date = datetime.fromisoformat(event['start']).replace(hour=0, minute=0).isoformat()
+            event_num = STUDIES.index(event_start) + 1
+            event_status = event['holdingStatus']['name']
+            room_name, address = _get_room(event_id, data)
+            teacher = _get_teacher(event_id, data)
+            parsed_events.append(Event(event_id, event_num, event_date, event_start, event_end, event_name, teacher, room_name, address, event_status))  # diff is 0 by default
+
+
+
+
+    @classmethod
+    def from_prepared_json(cls, data):
         return cls([Event.from_json(event) for event in data])
 
+    @classmethod
+    def from_cache(cls, month, person_id):
+        #cache/monthnumber.personid.json
+        with open(f"cache/{month}.{person_id}.json", "r") as f:
+            data=json.load(f)
+        return cls.from_prepared_json(data)
+
+    def to_cache(self, month, person_id):
+        with open(f"cache/{month}.{person_id}.json", "w") as f:
+            json.dump(self.__list__(), f)
+
     def get_event_by_id(self, event_id):
-        for event in self.events:
-            if event.event_id==event_id:
-                return event
-        return None
+        event=[event for event in self.events if event.event_id==event_id]
+        return event[0] if len(event)>0 else None
 
     def get_events_by_date(self, date):
-        return [event for event in self.events if event.event_date==date]
+        return Events([event for event in self.events if event.event_date==date])
 
-    def get_events_by_time(self, time):
-        return [event for event in self.events if event.event_time==time]
+    def get_events_by_num(self, num):
+        return Events([event for event in self.events if event.event_num==num]) # usually 1 event, but if different days, then more
+
+    def get_events_between_times(self, start_time=..., end_time=...):
+        if start_time==... and end_time==...:
+            return deepcopy(self) # return a copy of the object
+        if start_time==...:
+            return Events([event for event in self.events if event.event_time<=end_time])
+        if end_time==...:
+            return Events([event for event in self.events if start_time<=event.event_time])
+        return Events([event for event in self.events if start_time<=event.event_time<=end_time])
+
+    def get_events_between_dates(self, start_date=..., end_date=...):
+        if start_date==... and end_date==...:
+            return deepcopy(self)
+        if start_date==...:
+            return Events([event for event in self.events if event.event_date<=end_date])
+        if end_date==...:
+            return Events([event for event in self.events if start_date<=event.event_date])
+        return Events([event for event in self.events if start_date<=event.event_date<=end_date])
+
 
     def get_events_by_name(self, name):
-        return [event for event in self.events if name in event.event_name]
+        return Events([event for event in self.events if name.lower() in event.event_name.lower()])
 
     def get_events_by_teacher(self, teacher):
-        return [event for event in self.events if teacher in event.teacher]
+        return Events([event for event in self.events if teacher.lower() in event.teacher.lower()])
 
     def get_events_by_room(self, room):
-        return [event for event in self.events if room in event.room_name]
+        return Events([event for event in self.events if room.lower() in event.room_name.lower()])
 
     def get_events_by_status(self, status):
-        return [event for event in self.events if status in event.status]
+        return Events([event for event in self.events if status.lower() in event.status.lower()])
 
-    def filter_events(self, start_time=None, end_time=None, delta=None, evt_num=None, evt_name_query=None, teacher_query=None, room_query=None, status=None):
+    # we dont need filter events function, because we can use the methods above
+
+    def diff(self, other):  # self is new, other is old
+        # return the difference between two events objects
+        added=[event.mark_new() for event in self.events if event not in other.events]
+        removed=[event.mark_removed() for event in other.events if event not in self.events]
+        changed=[]
+        for event in self.events:
+            old_event=other.get_event_by_id(event.event_id)
+            if old_event is not None:
+                diff=event.get_diff(old_event)  # automatically marks the diff
+                if diff is not None:
+                    changed.append(diff)
+        #events_sorted=
+        return Events(added+removed+changed)
+    
+    def human_diff(self):  # only for events with diff marks
+        return "\n".join([event.human_diff() for event in self.events])
+    
+    def humanize(self):
+        return self.__str__()
+    
+    def humanize_event(self, event_id):
+        event=self.get_event_by_id(event_id)
+        return event.humanize()    
+
+
+
+# person class will have subclasses Student and Employee. We define Person and then inherit from it
+@dataclass
+class Person:
+    person_id: int
+    name: str
+    start_date: date|None  # can be omitted in Json for some strange reason.
+    end_date: date|None
+
+    def __eq__(self, other):
+        return self.person_id==other.person_id
+
+    def __ne__(self, other):
+        return self.person_id!=other.person_id
+
+    def __hash__(self):
+        return hash(self.person_id)
+
+    @classmethod
+    def from_prepared(cls, data):
+        # check if data is student or employee
+        if data["type"]=="student":
+            return Student.from_prepared(data)
+        return Employee.from_prepared(data)
+
+
+        
+
+
+
+
+@dataclass
+class Student(Person):
+    specialty: str
+    profile: str
+
+    def __str__(self):
+        msg=f"{self.name}: {self.specialty}, {self.profile}."
+        if self.start_date is not None:
+            msg+=f" Учится с {self.start_date}"
+        if self.end_date is not None:
+            msg+=f" по {self.end_date}"
+        return msg
+
+    def __repr__(self):
+        return self.json()
+
+    def __dict__(self):
+        return {
+            "id": self.person_id,
+            "type": "student",  # to distinguish from employee
+            "name": self.name,
+            "specialty": self.specialty,
+            "profile": self.profile,
+            "start_date": self.start_date.isoformat(),
+            "end_date": self.end_date.isoformat()
+        }
+
+    def json(self):
+        return json.dumps(self.__dict__())
+
+    @classmethod
+    def from_prepared(cls, data):  # dont use this method directly, use from_prepared in Person
+        return cls(data["id"], data["name"], data["specialty"], data["profile"], date.fromisoformat(data["start_date"]), date.fromisoformat(data["end_date"]))
+
+
+@dataclass
+class Employee(Person):
+    group: str
+
+    def __str__(self):
+        #return f"{self.name}: {self.group}. Работает с {self.start_date} по {self.end_date}"
+        msg=f"{self.name}: {self.group}."
+        if self.start_date is not None:
+            msg+=f" Работает с {self.start_date}"
+        if self.end_date is not None:
+            msg+=f" по {self.end_date}"
+        return msg
+
+    def __repr__(self):
+        return self.json()
+
+    def __dict__(self):
+        return {
+            "id": self.person_id,
+            "name": self.name,
+            "type": "employee",
+            "group": self.group,
+            "start_date": self.start_date.isoformat(),
+            "end_date": self.end_date.isoformat()
+        }
+
+    def json(self):
+        return json.dumps(self.__dict__())
+
+    @classmethod
+    def from_prepared(cls, data):  # dont use this method directly, use from_prepared in Person
+        return cls(data["id"], data["name"], data["group"], date.fromisoformat(data["start_date"]), date.fromisoformat(data["end_date"]))
+
+class People:
+    def __init__(self, people):
+        self.people=people
+
+    #begin magic methods
+    def __iter__(self):
+        return iter(self.people)
+
+    def __len__(self):
+        return len(self.people)
+
+    def __getitem__(self, index):
+        return self.people[index]
+
+    def __setitem__(self, index, value):
+        self.people[index]=value
+
+    def __delitem__(self, index):
+        del self.people[index]
+
+    def __str__(self):  # human readable
+        return "\n".join([str(person) for person in self.people])
+
+    def __repr__(self):  # for debugging
+        return f"People {self.people}"
+
+    def __contains__(self, item):
+        # filter by query. If string, then return bool whether it is in all event strings
+        if isinstance(item, str):  # if "Воронцов" in people, it will return True if it is in any person
+            return any([item.lower() in person.name.lower() for person in self.people])
+        return item in self.people
+
+    def __eq__(self, other):
+        return self.people==other.people
+
+    def __ne__(self, other):
+        return self.people!=other.people
+
+    def __add__(self, other):
+        # add but remove duplicates
+        ppl_set=set(self.people+other.people)
+        return People(list(ppl_set))
+
+    def __sub__(self, other):
+        return People([person for person in self.people if person not in other.people])
+
+    def __list__(self):  # use it to get the list of dictified events
+        return [person.__dict__() for person in self.people]
+    #end magic methods
+
+    def json(self):
+        return json.dumps(self.__list)
+
+    @classmethod
+    def from_big_mess(cls, data):
+        if "_embedded" in data:  # allow to take full data or just everything inside _embedded
+            data=data["_embedded"]
+        persons=data['persons'] if 'persons' in data else []
+        if len(persons)==0:
+            return cls([]) # empty, not NoOne
+        parsed_persons=[]
+        for person in persons:
+            person_id=person['id']
+            person_type, person_info=get_person_info(person_id, data)
+            if person_type=="student":
+                start_date=date.fromisoformat(person_info['learningStartDate'])
+                end_date=date.fromisoformat(person_info['learningEndDate'])
+                parsed_persons.append(Student(person_id, person['fullName'], start_date, end_date, person_info['specialtyName'], person_info['specialtyProfile']))
+            elif person_type=="employee":
+                start_date=date.fromisoformat(person_info['dateIn'])
+                end_date=date.fromisoformat(person_info['dateOut'])
+                parsed_persons.append(Employee(person_id, person['fullName'], start_date, end_date, person_info['groupName']))
+        return cls(parsed_persons)
+
+
+
+    @classmethod
+    def from_prepared_json(cls, data):
+        return cls([Person.from_prepared(person) for person in data])
+
+    @classmethod
+    def from_cache(cls):
+        with open("people.json", "r") as f:
+            data=json.load(f)
+        return cls.from_prepared_json(data)
+
+    def to_cache(self):
+        with open("people.json", "w") as f:
+            json.dump(self.__list__(), f)
+
+    def get_person_by_id(self, person_id):
+        person=[person for person in self.people if person.person_id==person_id]
+        return person[0] if len(person)>0 else None
+
+    def get_person_by_name(self, name):
+        return People([person for person in self.people if name.lower() in person.name.lower()])
+
+    def get_students(self):
+        return People([person for person in self.people if isinstance(person, Student)])
+    
+    def get_employees(self):
+        return People([person for person in self.people if isinstance(person, Employee)])
+    
+    def get_students_by_specialty(self, specialty):
+        return People([person for person in self.get_students() if specialty.lower() in person.specialty.lower()])
+    
+    def get_students_by_profile(self, profile):
+        return People([person for person in self.get_students() if profile.lower() in person.profile.lower()])
+    
+    def get_employees_by_group(self, group):
+        return People([person for person in self.get_employees() if group.lower() in person.group.lower()])
+
+    def get_people_by_date(self, date):
+        return People([person for person in self.people if person.start_date<=date<=person.end_date])  # basically, get all people who are active on this date
+    
+    # that's all for now. We can add more methods later if needed. What the hell, 1130 lines! Now we remove old functions.
+
+
+class NoOne(Person):
+    # a class that prints warnings in all methods
+    def __init__(self):
+        self.person_id=0
+        self.name="NoOne"
+        self.start_date=date.today()
+        self.end_date=date.today()
+
+    def __getattr__(self, attr):
+        print(f"Warning: NoOne has no attribute {attr}")
+        return lambda *args, **kwargs: print(f"Warning: NoOne has no method {attr}")
+# yep, our ghost is ready.
