@@ -8,7 +8,7 @@ from datepicker import DatePicker
 from app_logic import App
 from parsers.people import noone, People
 from news import news
-VERSION="1.0.0-beta3"
+VERSION="1.0.0-beta4"
 import sys
 
 class MainWindow(wx.Frame):
@@ -23,8 +23,6 @@ class MainWindow(wx.Frame):
         self.date_picker = DatePicker(self.panel, self.schedule)
         self.control = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(600, 400))
         self.savetotxtbtn = wx.Button(self.panel, label="Сохранить в файл")
-        #self.savetotxtbtn.SetShortcut(wx.ACCEL_CTRL, ord('S'))  # button object has no SetShortcut method
-
         self.savetotxtbtn.Bind(wx.EVT_BUTTON, self.OnSaveToTxt)
         # layout
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -124,6 +122,7 @@ class MainWindow(wx.Frame):
             return
         self.app.send_command(["saveperson", result])
         self.authed=True
+        self.SetTitle(f"Расписание САФУ - {self.app.schedule.people.current.name}")
         self.status("Получение расписания...", True)
         self.schedule(self.date_picker.get_selected_date(), True)
 
