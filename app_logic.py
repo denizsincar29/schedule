@@ -17,9 +17,7 @@ saveperson: save the person with the given index in results list. The arguments 
 
 
 from schedule import Schedule, auth
-import schedparser
-from datetime import datetime
-from pytz import timezone
+#import schedparser  # this module is already replaced by great new parser.
 from threading import Thread
 from queue import Queue
 from random import choice
@@ -28,6 +26,7 @@ from win11toast import notify
 import os
 import dotenv # move dotenv check here
 from sys import exit  # pyinstaller can't find it in some cases
+
 dotdotdot=... # for the match statement
 VERSION="1.0.0-beta2"
 
@@ -41,7 +40,6 @@ class App(Thread):
         Thread.__init__(self)
         self.forward = Queue()
         self.schedule = None  # don't use this if not authed. Else you'll get angry customers chasing you with pitchforks.
-        self.person=None
         self.on_auth=on_auth  # function to run after the user has been authenticated
         self.daemon = True  # we don't want to keep the program running after the main thread exits
         self.start()
@@ -58,7 +56,7 @@ class App(Thread):
             command.extend([None]*(4-len(command)))
             match command[0]:
                 case "schedule":
-                    wxrun(cb, self.schedule.get_schedule_str(self.schedule.current_person, command[1], command[2], command[3]))
+                    wxrun(cb, self.schedule.schedule(self.schedule.people.current, command[1], command[2], command[3]).humanize())
                 case "fullname":
                     wxrun(cb, self.schedule.search_person(command[1], False))  # by_id is False
                 case "saveperson":
@@ -89,10 +87,9 @@ class App(Thread):
                     f.write(f"MODEUS_EMAIL={email}\nMODEUS_PASSWORD={password}\n")
             self.schedule=Schedule(email, password)
             self.schedule.load_people()
-            self.person=self.schedule.current_person
             diffs=self.schedule.get_month(-1)  # -1 is the current month
-            if diffs!=[]:
-                notify("Расписание изменилось!", self.schedule.humanize_diff(diffs), audio=randomsound())
+            if len(diffs)>0:
+                notify("Расписание изменилось!", diffs.human_diff(), audio=randomsound())
         if self.on_auth:
             wxrun(self.on_auth, authed)  # run the function in the main thread
 

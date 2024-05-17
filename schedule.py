@@ -283,6 +283,8 @@ class Schedule:
             start_time=date.today()
         if end_time is None:
             end_time=start_time
+        if overlap is None:
+            overlap=noone
         if overlap!=noone or person!=self.people.current:  # if we overlap or we don't get our own schedule
             sch=self.get_schedule(person, start_time, end_time, overlap)
             return sch  # if we overlap, we don't cache it

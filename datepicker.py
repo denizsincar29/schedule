@@ -1,7 +1,7 @@
 # a custem datepicker widget for wxPython
 
 import wx
-from datetime import datetime
+from datetime import date
 from pytz import timezone
 from calendar import isleap
 moscow=timezone("Europe/Moscow")
@@ -11,7 +11,7 @@ class DatePicker(wx.TreeCtrl):
     def __init__(self, parent, dt_callback, *args, **kwargs):
         super(DatePicker, self).__init__(parent, style=wx.TR_MULTIPLE, *args, **kwargs)
         self.root = self.AddRoot("root")
-        years = [datetime.now().year, datetime.now().year + 1]
+        years = [date.today().year, date.today().year + 1]
         self.current_year = self.AppendItem(self.root, str(years[0]))
         self.next_year = self.AppendItem(self.root, str(years[1]))
         for i in range(12):
@@ -28,13 +28,13 @@ class DatePicker(wx.TreeCtrl):
                 self.AppendItem(month, str(j))
             for j in range(1, days[1] + 1):
                 self.AppendItem(ny_month, str(j))
-        self.focus_tree_item_by_datetime(datetime.now())
+        self.focus_tree_item_by_date(date.today())
         self.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnDateChanged)
         self.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnDateChanged)
         self.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK, self.OnDateChanged)
         self.dt_callback = dt_callback
 
-    def focus_tree_item_by_datetime(self, date):
+    def focus_tree_item_by_date(self, date):
         year = date.year
         month = date.month
         day = date.day
@@ -83,7 +83,7 @@ class DatePicker(wx.TreeCtrl):
                 day = int(self.GetItemText(item))
                 month = months.index(self.GetItemText(self.GetItemParent(item))) + 1
                 year = int(self.GetItemText(self.GetItemParent(self.GetItemParent(item))))
-                dates.append(moscow.localize(datetime(year, month, day)))
+                dates.append(date(year, month, day))
         return dates
 
 

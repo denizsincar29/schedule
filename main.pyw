@@ -6,26 +6,25 @@ import wx
 from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG
 from datepicker import DatePicker
 from app_logic import App
+from parsers.people import noone, People
 from news import news
 VERSION="1.0.0-beta3"
 import sys
 
 class MainWindow(wx.Frame):
     def __init__(self):
-        wx.Frame.__init__(self, parent=None, title="Расписание САФУ", size=(800, 600), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
+        wx.Frame.__init__(self, parent=None, title=f"Расписание САФУ ({VERSION})", size=(800, 600), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         self.app=App(self.check_auth_cb)
-        self.person=None
         self.authed=False
-        # panel
+        #region GUI
         self.panel = wx.Panel(self, -1)
-        # create a hint that you can select start and end dates
         self.hint = wx.StaticText(self.panel, label="Примечание. Вы можете выделить дату начала и конца, чтобы получить расписание на этот диапазон.", size=(200, 50))
-        # create the date picker
         self.date_label = wx.StaticText(self.panel, label="Выберите дату")
-        # make the tree narrower. The date picker is subclass of tree control.
         self.date_picker = DatePicker(self.panel, self.schedule)
         self.control = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(600, 400))
         self.savetotxtbtn = wx.Button(self.panel, label="Сохранить в файл")
+        #self.savetotxtbtn.SetShortcut(wx.ACCEL_CTRL, ord('S'))  # button object has no SetShortcut method
+
         self.savetotxtbtn.Bind(wx.EVT_BUTTON, self.OnSaveToTxt)
         # layout
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -42,12 +41,40 @@ class MainWindow(wx.Frame):
         self.panel.SetSizer(hsizer)
         self.Bind(wx.EVT_CLOSE, self.exit)
         self.CreateStatusBar()
+        self.menubar()
         self.Centre()
         self.Show(True)
+        #endregion
         if (n:=news()) is not None:
             self.app.send_command(["toast", "Новость!", n, "ms-winsoundevent:Notification.Looping.Call10"])  # call10 is the best sound
             PopUpMSG(self, "Новость!", n).ShowModal()
         self.status("Авторизация...")
+
+    def menubar(self):
+        # create a menubar
+        menubar = wx.MenuBar()
+        filemenu = wx.Menu()
+        # save to txt
+        filemenu.Append(wx.ID_SAVE, "Сохранить в файл\tCTRL+S", "Сохранить расписание в файл")
+        filemenu.Append(wx.ID_EXIT, "Выход\tAlt+F4", "Выход из программы")
+        helpmenu = wx.Menu()
+        helpmenu.Append(wx.ID_ABOUT, "О программе\tF1", "О программе")
+        menubar.Append(filemenu, "Файл")
+        menubar.Append(helpmenu, "Помощь")
+        self.Bind(wx.EVT_MENU, self.OnSaveToTxt, id=wx.ID_SAVE)
+        self.Bind(wx.EVT_MENU, self.exit, id=wx.ID_EXIT)
+        self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
+        # shortcuts
+        accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('S'), wx.ID_SAVE), (0, wx.WXK_F1, wx.ID_ABOUT)])
+        self.SetAcceleratorTable(accel_tbl)
+        self.SetMenuBar(menubar)
+
+    def OnAbout(self, event):
+        # make the popup like in news with readme.txt
+        with open("readme.txt", "r", encoding="UTF-8") as f:
+            readme=f.read()
+        PopUpMSG(self, "О программе", readme).ShowModal()
+        event.Skip()
 
     def status(self, text, speak=True):
         self.SetStatusText(text)
@@ -60,8 +87,6 @@ class MainWindow(wx.Frame):
         with open("schedule.txt", "w", encoding="UTF-8") as f:
             f.write(self.control.GetValue())
         self.status("Расписание сохранено в schedule.txt")
-
-
 
 
     def schedule(self, dates=[], toast=False):
@@ -79,10 +104,11 @@ class MainWindow(wx.Frame):
     def check_auth_cb(self, state):
         if state==True:  #noqa
             #we ask for name
-            if self.app.person is None:
+            if self.app.schedule.people.current==noone:
                 self.ask_fullname()
             else:
                 self.authed=True
+                self.SetTitle(f"Расписание САФУ - {self.app.schedule.people.current.name}")
                 self.status("Получение расписания...", True)
                 self.schedule(self.date_picker.get_selected_date(), True)
         elif state==... or state==False:  #noqa
@@ -106,9 +132,6 @@ class MainWindow(wx.Frame):
         self.status("Расписание получено.", toast)  # if toast is True, it will be spoken
         if toast:
             self.app.send_command(["toast", "Расписание САФУ", schedule])
-
-
-
 
 
     def ask_emailnpassword(self):
@@ -140,7 +163,7 @@ class MainWindow(wx.Frame):
             return 0
         people=[]
         for person in results:
-            people.append(self.app.schedule.humanize_person(person["id"], results))
+            people.append(str(person))
         with ChooseFromList(self, "Выберите правильный вариант из списка", people, range(len(results))) as cfl:
             status=cfl.ShowModal() == wx.ID_OK
             selection=cfl.value
@@ -157,11 +180,12 @@ class MainWindow(wx.Frame):
         self.status("Выход...")
         self.SetTitle("Выход...")
         self.app.send_command(["exit"])
-        self.app.join()  # we dont cut, we wait like a gentleman
-        if event:
-            event.Skip()
-        else:
-            self.Destroy()  # if called from code
+        self.app.join(timeout=5)
+        print("Exiting...")
+        #if event:
+            #event.Skip()
+        #else:
+        self.Destroy()  # if called from code
 
 
 showhide = False

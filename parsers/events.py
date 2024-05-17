@@ -277,7 +277,6 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
     def __str__(self):  # human readable
         if len(self.events)==0:
             return "Пар нет!"
-        #return "\n".join([str(event) for event in self.events])  # we need to insert a date before first event or if date changes
         msg=""
         prev_date=date(2020, 1, 1)# to instantly print the first date
         for event in self.events:
@@ -285,7 +284,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
                 msg+=f"\n{event.event_date:%d/%m}"
                 prev_date=event.event_date
             msg+=f"\n{event}"
-        return msg
+        return msg.strip()
 
     def __repr__(self):  # for debugging
         return f"Events {self.events}"
