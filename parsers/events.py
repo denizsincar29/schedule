@@ -3,10 +3,10 @@ from pytz import timezone
 from dataclasses import dataclass, field
 from copy import deepcopy
 from typing import Self
-import mess
+from . import mess, people
 import json
 
-STUDIES = ["08:20", "10:10", "12:00", "14:30", "16:15", "18:00", "19:40"]
+STUDIES = [time(8, 20), time(10, 10), time(12, 0), time(14, 30), time(16, 15), time(18, 0), time(19, 40)]
 moscow=timezone("Europe/Moscow")
 
 def combine_moscow(date, time):  # i am from russia, we are lazy to write this every time xD!
@@ -45,7 +45,7 @@ class Event:
     diff: int=0  # 0- no diff, 1- new, -1- removed, 2- changed
     changed: list=field(default_factory=list)  # list of changed fields
 
-    #region magic methods
+      #region magic methods
     def __eq__(self, other):
         return self.event_id==other.event_id
 
@@ -53,10 +53,10 @@ class Event:
         return self.event_id!=other.event_id
 
     def __str__(self):  # human readable in russian
-        return f"Пара {self.event_num}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+        return f"Пара {self.event_num}: с {self.event_start:%H:%M} до {self.event_end:%H:%M}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
 
     def __repr__(self):  # for debugging
-        return f"Event {self.event_num}: {self.event_name}. Teacher: {self.teacher}. Room: {self.room_name}. Address: {self.address}. Status: {self.status}"
+        return f"Event {self.event_num}: {self.event_name}. Teacher: {self.teacher}. Room: {self.room_name}. Address: {self.address}. Status: {self.status}, Diff: {self.diff}, Changed: {self.changed}"
 
     def __hash__(self):
         return hash(self.event_id)
@@ -68,6 +68,12 @@ class Event:
     def __gt__(self, other):
         return self.start_datetime>other.start_datetime
     #endregion
+
+    def pprint(self) -> str:
+        """Prints the event in a human-readable format."""
+        print(self.__str__())
+        return self.__str__()
+
 
     @property
     def start_datetime(self) -> datetime:
@@ -188,7 +194,7 @@ class Event:
     def human_diff(self) -> str:
         """Returns the diff as a human-readable string."""
         if self.diff==0:
-            return "Изменений нет!"
+            return ""  # to avoid printing "Изменений нет" million times for each event
         msg=""
         if self.diff==1:
             msg+=f"Новая пара {self.event_num}: с {self.event_start} до {self.event_end}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
@@ -248,8 +254,9 @@ class Event:
 
 class Events:  # if this were rust, it would be a trait for Vec<Event>
     """A collection of events. Supports all list methods and some additional methods for filtering and diffing."""
-    def __init__(self, events: list[Event]):
+    def __init__(self, events: list[Event]=[], nocache=False):
         self.events=events
+        self.nocache=nocache  # true if we have empty cache, false if we have cache but no events in the specified filtered range
 
     #region magic methods
     def __iter__(self):
@@ -270,7 +277,15 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
     def __str__(self):  # human readable
         if len(self.events)==0:
             return "Пар нет!"
-        return "\n".join([str(event) for event in self.events])
+        #return "\n".join([str(event) for event in self.events])  # we need to insert a date before first event or if date changes
+        msg=""
+        prev_date=date(2020, 1, 1)# to instantly print the first date
+        for event in self.events:
+            if event.event_date!=prev_date:
+                msg+=f"\n{event.event_date:%d/%m}"
+                prev_date=event.event_date
+            msg+=f"\n{event}"
+        return msg
 
     def __repr__(self):  # for debugging
         return f"Events {self.events}"
@@ -290,7 +305,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
     def __add__(self, other):
         # add but remove duplicates
         evt_set=set(self.events+other.events)
-        return Events(list(evt_set))
+        return Events(sorted(list(evt_set)))  # sorted by start time
 
     def __sub__(self, other):
         # return self.events-other.events # we cannot sub lists
@@ -299,6 +314,21 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
     def __list__(self):  # use it to get the list of dictified events
         return [event.__dict__() for event in self.events]
     #endregion
+
+    def pprint(self, person: people.Person=people.noone) -> str:
+        """
+        Prints the events in a human-readable format.
+
+        Parameters:
+        - person (Person): The person to print the events for.
+
+        Returns:
+        - str: The events in a human-readable format.
+        """
+        print(f"Расписание {person.name}:" if person!=people.noone else "Расписание:")  # great if we would have genitive case for names.
+        print(self.__str__())
+        return self.__str__()
+
 
     def json(self) -> str:
         """Returns the events as a JSON string."""
@@ -326,13 +356,13 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
             event_name = mess.get_name(event['_links']['course-unit-realization']['href'][1:], data)
             event_start = datetime.fromisoformat(event['start']).time()
             event_end = datetime.fromisoformat(event['end']).time()
-            event_date = datetime.fromisoformat(event['start']).replace(hour=0, minute=0).isoformat()
+            event_date = datetime.fromisoformat(event['start']).date()
             event_num = STUDIES.index(event_start) + 1
             event_status = event['holdingStatus']['name']
             room_name, address = mess.get_room(event_id, data)
             teacher = mess.get_teacher(event_id, data)
             parsed_events.append(Event(event_id, event_num, event_date, event_start, event_end, event_name, teacher, room_name, address, event_status))  # diff is 0 by default
-        return cls(parsed_events)
+        return cls(sorted(parsed_events))
 
     @classmethod
     def from_prepared_json(cls, data: dict) -> Self:
@@ -345,7 +375,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The collection of events created from the data.
         """
-        return cls([Event.from_json(event) for event in data])
+        return cls(sorted(Event.from_prepared(event) for event in data))
 
     @classmethod
     def from_cache(cls, month: int, person_id: str) -> Self:
@@ -359,12 +389,11 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The collection of events created from the cache.
         """
-        #cache/monthnumber.personid.json
         try:
-            with open(f"cache/{month}.{person_id}.json", "r") as f:
+            with open(f"cache/{month}.{person_id}.json", "r", encoding="UTF-8") as f:
                 data=json.load(f)
         except FileNotFoundError:
-            return cls([])
+            return cls([], True)  # we have empty cache
         return cls.from_prepared_json(data)
 
     def to_cache(self, month: int, person_id: str) -> Self:
@@ -378,9 +407,11 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The collection of events representing difference between the old and new events.
         """
+        if month==-1:
+            month=date.today().month  # we can save to the current month
         # read from cache to differentiate the events
         old_events=Events.from_cache(month, person_id)  # attention! recursive call
-        with open(f"cache/{month}.{person_id}.json", "w") as f:
+        with open(f"cache/{month}.{person_id}.json", "w", encoding="UTF-8") as f:
             json.dump(self.__list__(), f)
         return self.diff(old_events)
 
@@ -408,8 +439,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The events for the given date.
         """
-
-        return Events([event for event in self.events if event.event_date==date])
+        return Events([event for event in self.events if event.event_date==date], self.nocache)  # preserve nocache status
 
     def get_events_by_num(self, num):
         """
@@ -421,7 +451,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The events for the given number.
         """
-        return Events([event for event in self.events if event.event_num==num]) # usually 1 event, but if different days, then more
+        return Events([event for event in self.events if event.event_num==num], self.nocache)
 
     def get_events_between_times(self, start_time: time=..., end_time: time=...) -> Self:
         """
@@ -437,10 +467,10 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         if start_time==... and end_time==...:
             return deepcopy(self) # return a copy of the object
         if start_time==...:
-            return Events([event for event in self.events if event.event_time<=end_time])
+            return Events([event for event in self.events if event.event_time<=end_time], self.nocache)
         if end_time==...:
-            return Events([event for event in self.events if start_time<=event.event_time])
-        return Events([event for event in self.events if start_time<=event.event_time<=end_time])
+            return Events([event for event in self.events if start_time<=event.event_time], self.nocache)
+        return Events([event for event in self.events if start_time<=event.event_time<=end_time], self.nocache)
 
     def get_events_between_dates(self, start_date: date=..., end_date: date=...) -> Self:
         """
@@ -456,10 +486,10 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         if start_date==... and end_date==...:
             return deepcopy(self)
         if start_date==...:
-            return Events([event for event in self.events if event.event_date<=end_date])
+            return Events([event for event in self.events if event.event_date<=end_date], self.nocache)
         if end_date==...:
-            return Events([event for event in self.events if start_date<=event.event_date])
-        return Events([event for event in self.events if start_date<=event.event_date<=end_date])
+            return Events([event for event in self.events if start_date<=event.event_date], self.nocache)
+        return Events([event for event in self.events if start_date<=event.event_date<=end_date], self.nocache)
 
 
     def get_events_by_name(self, name: str) -> Self:
@@ -472,7 +502,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The events with the given name.
         """
-        return Events([event for event in self.events if name.lower() in event.event_name.lower()])
+        return Events([event for event in self.events if name.lower() in event.event_name.lower()], self.nocache)
 
     def get_events_by_teacher(self, teacher: str) -> Self:
         """
@@ -484,7 +514,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The events with the given teacher.
         """
-        return Events([event for event in self.events if teacher.lower() in event.teacher.lower()])
+        return Events([event for event in self.events if teacher.lower() in event.teacher.lower()], self.nocache)
 
     def get_events_by_room(self, room: str) -> Self:
         """
@@ -496,7 +526,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The events with the given room.
         """
-        return Events([event for event in self.events if room.lower() in event.room_name.lower()])
+        return Events([event for event in self.events if room.lower() in event.room_name.lower()], self.nocache)
 
     def get_events_by_status(self, status: str) -> Self:
         """
@@ -508,7 +538,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The events with the given status.
         """
-        return Events([event for event in self.events if status.lower() in event.status.lower()])
+        return Events([event for event in self.events if status.lower() in event.status.lower()], self.nocache)
 
     def overlap(self, other: Self) -> Self:
         """
@@ -520,7 +550,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The overlap between the two collections of events.
         """
-        return Events([event for event in self.events if event in other.events])
+        return Events([event for event in self.events if event in other.events], self.nocache)
 
 
     def diff(self, other: Self) -> Self:
@@ -533,6 +563,8 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         Returns:
         - Events: The difference between the two collections of events with diff marks.
         """
+        if len(other)==0:
+            return Events([])  # well, if there was empty cache, then all events seemed new but they are not
         added=[event.mark_new() for event in self.events if event not in other.events]
         removed=[event.mark_removed() for event in other.events if event not in self.events]
         changed=[]
@@ -540,19 +572,26 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
             old_event=other.get_event_by_id(event.event_id)
             if old_event is not None:
                 diff=event.get_diff(old_event)  # automatically marks the diff
-                if diff is not None:
+                if diff is not None and diff.diff==2:
                     changed.append(diff)
-        #events_sorted=
-        return Events(added+removed+changed)
-    
-    def human_diff(self) -> Self:  # only for events with diff marks
+        return Events(sorted(added+removed+changed))  # the < operator overloaded by start time
+
+    def human_diff(self) -> str:
         """Returns the diff as a human-readable string."""
-        return "\n".join([event.human_diff() for event in self.events])
-    
+        return "\n".join([hdiff for event in self.events if (hdiff:=event.human_diff())!=""])
+
+    def pprint_diff(self) -> str:
+        """Prints the diff in a human-readable format if there are."""
+        if len(self)>0:
+            print("Изменения в расписании:")
+            print(self.human_diff())
+            return self.human_diff()
+        return "" # to avoid printing "Изменений нет" million times for each event
+
     def humanize(self) -> Self:
         """Returns the events as a human-readable string."""
         return self.__str__()
-    
+
     def humanize_event(self, event_id: str) -> str:
         """
         Returns the event as a human-readable string.

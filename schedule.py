@@ -63,7 +63,7 @@ class Schedule:
         self.expire=datetime.now()-timedelta(seconds=10)
         self.results=People()
         self.people=People()  # self.current_person is now self.people.current and friend is self.people.friend
-        self.last_events=[]
+        self.last_events=Events()
         self.last_msg=""
         self.config=Config()
         if not os.path.exists("cache"):
@@ -98,24 +98,28 @@ class Schedule:
             self.expire=datetime.now()+timedelta(hours=12)  # modeus token lives for 12 hours and dies!
             self.save_token()
 
-    def save_current_person(self, id: str=...):
+    def save_current_person(self, person: Person=noone, itsme: bool=True):
         """
         saves person info to people.json.
 
         Parameters:
-        id (str): id of the person to save. If not given, it will save self.current_person.
+        person (Person): person to save. If not given, it will save self.people.current.
+        itsme (bool): If True, save to self.people.current, else save to self.people.friend.
 
         """
-
-        if id!="":
-            self.people.current=id
+        if person!=noone:
+            self.people.append(person)
+            if itsme:
+                self.people.current=person.person_id
+            else:
+                self.people.friend=person.person_id
         self.people.to_cache()
 
     def load_people(self):
         """Loads people from people.json. If file does not exist, it will create an empty list."""
         self.people=People.from_cache()
 
-    def get_schedule(self, person: Person=noone, start_time=None, end_time=None, overlap: Person=noone) -> Events:
+    def get_schedule(self, person: Person=noone, start_time: date=None, end_time: date=None, overlap: Person=noone) -> Events:
         """
         Gets schedule for a person.
 
@@ -135,12 +139,15 @@ class Schedule:
         self.check_token()
         if start_time is None:
             start_time=moscow.localize(datetime.now()).replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            start_time=moscow.localize(datetime.combine(start_time, datetime.min.time()))
         if end_time is None:
             end_time=start_time+timedelta(days=1, seconds=-1)  # end of the day
+        else:
+            end_time=moscow.localize(datetime.combine(end_time, datetime.min.time()))+timedelta(days=1, seconds=-1)
         g=Events.from_big_mess(get_schedule(person.person_id, self.token, start_time, end_time))
         if overlap!=noone:
             h=Events.from_big_mess(get_schedule(overlap.person_id, self.token, start_time, end_time))
-            # parsed to prepared data, lets get overlapping events
             return g.overlap(h)
         return g
 
@@ -162,9 +169,9 @@ class Schedule:
         start_time=moscow.localize(datetime.now()).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         if month!=-1:
             start_time=start_time.replace(month=month)
-        end_time = start_time + relativedelta(months=1) - timedelta(days=1)
+        end_time = start_time + relativedelta(months=1) - timedelta(seconds=1)  # i hope we don't have university events in 23:59 lol
         sched=self.get_schedule(person, start_time, end_time)
-        diff=sched.to_cache()
+        diff=sched.to_cache(month, person.person_id)
         # delete previous month file if it exists. (also december file if january counts as previous month)
         month=12 if start_time.month==1 else start_time.month-1
         try:
@@ -188,7 +195,7 @@ class Schedule:
         Events: List of events that match the filters.
         """
         # flatten the list of all events of the range of months, then filter out the events that are not in the range of dates.
-        return sum([Events.from_cache(month, person.person_id) for month in range(start_date.month, end_date.month+1)], Events([])).get_events_between_dates(start_date, end_date)  # clever one-liner, isn't it?
+        return sum([Events.from_cache(month, person.person_id) for month in range(start_date.month, end_date.month+1)], Events()).get_events_between_dates(start_date, end_date)  # what a clever one-liner!
 
     def search_person_from_cache(self, term: str, by_id: bool) -> People:
         """
@@ -242,11 +249,7 @@ class Schedule:
         """
         if idx<0 or idx>=len(self.results):
             return False
-        if itsme:
-            self.people.current=self.results[idx]
-            self.save_current_person()
-        else:
-            self.people.friend=self.results[idx]
+        self.save_current_person(self.results[idx], itsme)
         return True
 
 
@@ -263,29 +266,29 @@ class Schedule:
         self.check_token()
         return who_goes(event.event_id, self.token)
 
-    def schedule(self, person: Person=noone, start_time=None, end_time=None, overlap: Person=noone) -> Events:
+    def schedule(self, person: Person=noone, start_time: date=None, end_time: date=None, overlap: Person=noone) -> Events:
         """
         Gets schedule for a person. It caches the schedule for the day. This function is recommended to use.
 
         Parameters:
         person (Person): the person to get schedule.
-        start_time (datetime): start time of the schedule. If not given, it will get schedule for today.
-        end_time (datetime): end time of the schedule. If not given, it will get schedule for today.
+        start_time (date): start time of the schedule. If not given, it will get schedule for today.
+        end_time (date): end time of the schedule. If not given, it will get schedule for today.
         overlap (person): person to get overlapping events.
 
         Returns:
         Events: Schedule of the person.
         """
         if start_time is None:
-            start_time=moscow.localize(datetime.now()).replace(hour=0, minute=0, second=0, microsecond=0)
+            start_time=date.today()
         if end_time is None:
-            end_time=start_time+timedelta(days=1, seconds=-1)  # end of the day
-        if overlap!=noone:  # if overlap_id is given, get overlapping events
+            end_time=start_time
+        if overlap!=noone or person!=self.people.current:  # if we overlap or we don't get our own schedule
             sch=self.get_schedule(person, start_time, end_time, overlap)
             return sch  # if we overlap, we don't cache it
-        sch=self.search_in_cache(person, start_time.date(), end_time.date())
-        if len(sch)==0:  # don't make this happen! Load cache manually for this function to work faster!
-            print("warning: cache miss. This is not recommended. Load cache manually for this function to work faster!")
+        sch=self.search_in_cache(person, start_time, end_time)
+        if sch.nocache: # if not nocache then just no events
+            print("warning: cache miss. This is not recommended. Load cache manually for this function to work faster!")  # don't trigger this warning in production!
             sch=self.get_schedule(person, start_time, end_time)
         return sch
 

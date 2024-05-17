@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 import json
 from typing import Self
-from mess import get_person_info
+from .mess import get_person_info
 
 
 @dataclass
@@ -24,6 +24,7 @@ class Person:
     start_date: date|None  # can be omitted in Json for some strange reason.
     end_date: date|None
 
+    #region magic methods
     def __eq__(self, other):
         return self.person_id==other.person_id
 
@@ -32,6 +33,7 @@ class Person:
 
     def __hash__(self):
         return hash(self.person_id)
+    #endregion
 
     @classmethod
     def _from_prepared(cls, data: dict) -> Self:
@@ -47,7 +49,6 @@ class Person:
         if data["type"]=="student":
             return Student._from_prepared(data)
         return Employee._from_prepared(data)
-
 
 @dataclass
 class Student(Person):
@@ -67,6 +68,11 @@ class Student(Person):
         """Returns the type of the person."""
         return Student  # we can simply write if some_person.type==Student
 
+    def pprint(self):
+        """Prints the student in a human-readable format."""
+        print(self.__str__())
+
+
     def __str__(self):
         msg=f"{self.name}: {self.specialty}, {self.profile}."
         if self.start_date is not None:
@@ -85,8 +91,8 @@ class Student(Person):
             "name": self.name,
             "specialty": self.specialty,
             "profile": self.profile,
-            "start_date": self.start_date.isoformat(),
-            "end_date": self.end_date.isoformat()
+            "start_date": self.start_date.isoformat() if self.start_date is not None else None,
+            "end_date": self.end_date.isoformat() if self.end_date is not None else None
         }
 
     def json(self) -> str:
@@ -95,8 +101,10 @@ class Student(Person):
 
     @classmethod
     def _from_prepared(cls, data):  # dont use this method directly, use from_prepared in Person
-
-        return cls(data["id"], data["name"], data["specialty"], data["profile"], date.fromisoformat(data["start_date"]), date.fromisoformat(data["end_date"]))
+        # for some reason, start_date and end_date can be None in Json
+        stdate=datetime.fromisoformat(data["start_date"]).date() if data["start_date"] is not None else None
+        endate=datetime.fromisoformat(data["end_date"]).date() if data["end_date"] is not None else None
+        return cls(data["id"], data["name"], stdate, endate, data["specialty"], data["profile"])
 
 @dataclass
 class Employee(Person):
@@ -111,6 +119,11 @@ class Employee(Person):
     def type(self) -> type:
         """Returns the type of the person."""
         return Employee
+
+    def pprint(self):
+        """Prints the employee in a human-readable format."""
+        print(self.__str__())
+
 
     def __str__(self):
         #return f"{self.name}: {self.group}. Работает с {self.start_date} по {self.end_date}"
@@ -140,7 +153,9 @@ class Employee(Person):
 
     @classmethod
     def _from_prepared(cls, data: dict):  # dont use this method directly, use from_prepared in Person
-        return cls(data["id"], data["name"], data["group"], date.fromisoformat(data["start_date"]), date.fromisoformat(data["end_date"]))
+        stdate=datetime.fromisoformat(data["start_date"]).date() if data["start_date"] is not None else None
+        endate=datetime.fromisoformat(data["end_date"]).date() if data["end_date"] is not None else None
+        return cls(data["id"], data["name"], stdate, endate, data["group"])
 
 class People:
     """
@@ -149,8 +164,9 @@ class People:
     Attributes:
     - people (list): The list of people.
     - current (str): The current person's ID.
+    - friend (str): The friend's ID (to specify another person to get his/her data).
     """
-    def __init__(self, people: list, current: str="", friend: str=""):
+    def __init__(self, people: list[Person]=[], current: str="", friend: str=""):
         """
         Initializes the people.
 
@@ -160,7 +176,7 @@ class People:
         friend (str): The friend's ID (to specify another person to get his/her data).
         """
         self.people=people
-        self._current=current  # current person index
+        self._current=current  # current person id
         self._friend=friend
 
     #region magic methods
@@ -180,7 +196,7 @@ class People:
         del self.people[index]
 
     def __str__(self):  # human readable
-        return "\n".join([str(person) for person in self.people])
+        return "\n".join(f"{i+1}. {person}" for i, person in enumerate(self.people))
 
     def __repr__(self):  # for debugging
         return f"People {self.people}"
@@ -206,8 +222,12 @@ class People:
         return People([person for person in self.people if person not in other.people])
 
     def __dict__(self):
-        return {"current": self._current, "people": [person.__dict__() for person in self.people]}
+        return {"me": self._current, "people": [person.__dict__() for person in self.people]}
     #endregion
+
+    def pprint(self):
+        """Prints the people in a human-readable format."""
+        print(self.__str__())
 
     @property
     def current(self):
@@ -215,18 +235,30 @@ class People:
 
     @current.setter
     def current(self, pid):
-        if self.get_person_by_id(pid)==noone:
-
+        if isinstance(pid, Person):
+            self._current=pid.person_id
+        else:
+            self._current=pid
+        if self.current==noone:
             raise ValueError("No person with this id")
-        self._current=pid
 
     @property
     def friend(self):
         return self.get_person_by_id(self._friend)
-    
+
     @friend.setter
     def friend(self, pid):
-        self._friend=pid  # we can have no friend, so no need to check
+        if isinstance(pid, Person):
+            self._friend=pid.person_id
+        else:
+            self._friend=pid
+
+
+
+    def append(self, person: Person):
+        """Appends a person to the list."""
+        return self.people.append(person) if person not in self.people else None
+
 
     def json(self) -> str:
         """Returns the people as a JSON string."""
@@ -253,12 +285,12 @@ class People:
             person_id=person['id']
             person_type, person_info=get_person_info(person_id, data)
             if person_type=="student":
-                start_date=date.fromisoformat(person_info['learningStartDate'])
-                end_date=date.fromisoformat(person_info['learningEndDate'])
+                start_date=datetime.fromisoformat(person_info['learningStartDate']).date() if person_info['learningStartDate'] is not None else None
+                end_date=datetime.fromisoformat(person_info['learningEndDate']).date() if person_info['learningEndDate'] is not None else None
                 parsed_persons.append(Student(person_id, person['fullName'], start_date, end_date, person_info['specialtyName'], person_info['specialtyProfile']))
             elif person_type=="employee":
-                start_date=date.fromisoformat(person_info['dateIn'])
-                end_date=date.fromisoformat(person_info['dateOut'])
+                start_date=date.fromisoformat(person_info['dateIn']) if person_info['dateIn'] is not None else None
+                end_date=date.fromisoformat(person_info['dateOut']) if person_info['dateOut'] is not None else None
                 parsed_persons.append(Employee(person_id, person['fullName'], start_date, end_date, person_info['groupName']))
         return cls(parsed_persons)
 
@@ -273,7 +305,7 @@ class People:
         Returns:
         - People: The people parsed from the data.
         """
-        current=data["current"]  # we save only current person id, not friend
+        current=data["me"]  # we save only current person id, not friend
         people=data["people"]
         return cls([Person._from_prepared(person) for person in people], current)
 
@@ -281,7 +313,7 @@ class People:
     def from_cache(cls) -> Self:
         """loads people from cache"""
         try:
-            with open("people.json", "r") as f:
+            with open("people.json", "r", encoding="UTF-8") as f:
                 data=json.load(f)
         except FileNotFoundError:
             return cls([])
@@ -289,7 +321,7 @@ class People:
 
     def to_cache(self):
         """saves people to cache"""
-        with open("people.json", "w") as f:
+        with open("people.json", "w", encoding="UTF-8") as f:
             json.dump(self.__dict__(), f)
 
     def get_person_by_id(self, person_id: str) -> Person:

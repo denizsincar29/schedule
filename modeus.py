@@ -137,7 +137,7 @@ def get_schedule(person_id: str, modeus_token: str, start_time: datetime, end_ti
     RuntimeError: if can't find key embedded.
     """
     if end_time<=start_time:
-        raise ValueError("Time is bad!")
+        raise ValueError("End time must be greater than start time!")
     url = "https://narfu.modeus.org/schedule-calendar-v2/api/calendar/events/search?tz=Europe/Moscow"
     # "/" must not be encoded
     request_json = {
