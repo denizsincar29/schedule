@@ -4,6 +4,8 @@ import os
 import sys
 from packaging import version
 from subprocess import Popen
+from threading import Thread
+from queue import Queue
 ver=version.parse  # from autoupdate.update import ver  # for convenience
 
 def get_latest_release():
@@ -130,3 +132,37 @@ def update(current_version, parent):  # i think this must be called even before 
         # i think we cannot restart from here. We must close the main window and restart. Lets just return True
         return True
 
+
+# experimental downloading thread
+def download_thread(response, progcb, distroycb):
+    for p in download(response):
+        wx.CallAfter(progcb, p)  # call the progress callback in main thread
+    wx.CallAfter(distroycb)  # i think destroycb doesn't distroy itself but restarts with distroying the main window
+
+
+
+def update_thread(current_version, parent):
+    def check_update(current_version):
+        # can we busy parent?
+        with wx.BusyInfo("Проверка обновлений..."):
+            release = get_latest_release()  # hope it goes quickly
+            latest_version = ver(release['version'])
+            if current_version < latest_version or release['force_update']:
+                return True, latest_version
+        return False, latest_version
+
+    status, version=check_update(current_version)
+    if status:
+        dlg=YouWannaUpdateDialog(parent)
+        dlg.ShowModal()
+        if not dlg.ok:
+            return  False # we did not update
+        # download and update
+        response=get_response()
+        total=int(response.headers['Content-Length'])
+        progress=ProgressDlg(parent, total)
+        progress.Show()
+        t=Thread(target=download_thread, args=(response, progress.update, lambda: restart(parent)))  # restart is called in main thread
+        t.start()
+        # i think we cannot restart from here. We must close the main window and restart. Lets just return True
+        return True  # from now on, the thread will handle the download and restart automatically.

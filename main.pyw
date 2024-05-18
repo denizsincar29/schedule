@@ -8,7 +8,7 @@ from datepicker import DatePicker
 from app_logic import App
 from parsers.people import noone, People
 from news import news
-from autoupdate.wxupdate import update, restart, ver
+from autoupdate.wxupdate import update_thread, restart, ver
 VERSION=ver("1.0.0-beta4")
 
 class MainWindow(wx.Frame):
@@ -44,7 +44,7 @@ class MainWindow(wx.Frame):
         self.Show(True)
         #endregion
         if (getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')) or True:  # when bug is fixed, remove or True
-            updated=update(VERSION, self)
+            updated=update_thread(VERSION, self)
             if updated:
                 restart(self)
         if (n:=news()) is not None:
