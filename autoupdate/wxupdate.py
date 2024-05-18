@@ -80,14 +80,15 @@ class ProgressDlg(wx.Dialog):
 
 
 # make our own 2 functions instead of download release. One will return response (to get total size) and other will download the file
-def get_response():
-    with httpx.Client(follow_redirects=True) as client:
-        response = client.get("https://deniz.r1oaz.ru/schedule/setup.exe", timeout=None)
-    response.raise_for_status()
-    return response
+def get_response():  # get headers.
+    url = f"https://deniz.r1oaz.ru/schedule/setup.exe"
+    with httpx.Client() as client:
+        headers = client.head(url)
+        # return total size
+        return int(headers.headers['Content-Length'])
 
-def download(response):  # progress will be yielded!
-    with open("setup.exe", 'wb') as f:
+def download():  # progress will be yielded!
+    with open("setup.exe", 'wb') as f, httpx.stream("GET", "https://deniz.r1oaz.ru/schedule/setup.exe") as response:
         downloaded=0 # downloaded bytes
         for chunk in response.iter_bytes():
             f.write(chunk)
@@ -97,11 +98,6 @@ def download(response):  # progress will be yielded!
 
 
 
-# experimental downloading thread
-def download_thread(response, progcb, distroycb):
-    for p in download(response):
-        wx.CallAfter(progcb, p)  # call the progress callback in main thread
-    wx.CallAfter(distroycb)  # i think destroycb doesn't distroy itself but restarts with distroying the main window
 
 def check_update():  # this will be called in a thread
     release = get_latest_release()  # hope it goes quickly
@@ -109,27 +105,6 @@ def check_update():  # this will be called in a thread
     if VERSION < latest_version or release['force_update']:
         return True, latest_version
     return False, latest_version
-
-
-
-def update_thread(current_version, parent):  # experimental and deprecated
-    status, version=check_update(current_version)
-    if status:
-        dlg=YouWannaUpdateDialog(parent)
-        dlg.ShowModal()
-        if not dlg.ok:
-            return  False # we did not update
-        # download and update
-        response=get_response()
-        total=int(response.headers['Content-Length'])
-        progress=ProgressDlg(parent, total)
-        t=Thread(target=download_thread, args=(response, progress.update, lambda: restart(parent)))  # restart is called in main thread
-        t.start()
-        progress.Show()
-        # i think we cannot restart from here. We must close the main window and restart. Lets just return True
-        return True  # from now on, the thread will handle the download and restart automatically.
-    
-
 
 # a full class for updating in thread
 # first it will check updates and send (True, latest_version) or (False, VERSION) to self.on_update callback. If no updates, thread will simply end. If there is update, it will wait for a boolean to its queue. If the boolean is True, it will download and update. If False, it will end.
@@ -151,9 +126,9 @@ class Updater(Thread):
         wx.CallAfter(self.on_update, status, version)
         if status:
             if self.queue.get():  # got True, go on!
-                response=get_response()
-                wx.CallAfter(self.on_total, int(response.headers['Content-Length']))
-                for p in download(response):
+                total=get_response()
+                wx.CallAfter(self.on_total, total)
+                for p in download():
                     if not self.queue.empty() and not self.queue.get():  # really hope that "and" lazy evaluates, queue.get is blocking!
                         break
                     wx.CallAfter(self.on_progress, p)
