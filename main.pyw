@@ -8,13 +8,14 @@ from datepicker import DatePicker
 from app_logic import App
 from parsers.people import noone, People
 from news import news
-from autoupdate.wxupdate import update_thread, restart, ver
-VERSION=ver("1.0.0-beta4")
+from autoupdate.wxupdate import Updater, VERSION, restart, YouWannaUpdateDialog, ProgressDlg
 
 class MainWindow(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, parent=None, title=f"Расписание САФУ ({VERSION})", size=(800, 600), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         self.app=App(self.check_auth_cb)
+        self.updater=Updater(self.on_update, self.on_total, self.on_progress, self.on_restart)  # I didn't think of a better way to implement this
+        self.progress=None  # to not get attribute error
         self.authed=False
         #region GUI
         self.panel = wx.Panel(self, -1)
@@ -43,14 +44,39 @@ class MainWindow(wx.Frame):
         self.Centre()
         self.Show(True)
         #endregion
-        if (getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')) or True:  # when bug is fixed, remove or True
-            updated=update_thread(VERSION, self)
-            if updated:
-                restart(self)
+        #if (getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')) or True:  # when bug is fixed, remove or True
         if (n:=news()) is not None:
             self.app.send_command(["toast", "Новость!", n, "ms-winsoundevent:Notification.Looping.Call10"])  # call10 is the best sound
             PopUpMSG(self, "Новость!", n).ShowModal()
         self.status("Авторизация...")
+
+    def on_update(self, status: bool, version):
+        # if status, show do you wanna update yes no dialog. If yes, self.updator.q.put(True)
+        if status:
+            with YouWannaUpdateDialog(self) as ywud:
+                if ywud.ShowModal() == wx.ID_OK:
+                    self.updater.queue.put(True)  # start the update
+        else:
+            self.updater.queue.put(False)  # stop the thread
+
+    def on_total(self, total):
+        # create a progress dialog with total
+        print("debug: total is", total)
+        self.progress=ProgressDlg(self, total)
+        self.progress.Show()
+
+    def on_progress(self, progress):
+        # update the progress dialog
+        if self.progress:
+            self.progress.gauge.SetValue(progress)
+        else:
+            self.show_error("Странная ошибка. Прогрессбар не создан. Обратитесь к разработчику.", True)
+
+    def on_restart(self):
+        # close the progress dialog and restart the app
+        if self.progress:
+            self.progress.Close()
+        restart(self)  # it receives wxparent as self to close the main window
 
     def menubar(self):
         # create a menubar

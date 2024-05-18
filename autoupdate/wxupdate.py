@@ -7,6 +7,8 @@ from subprocess import Popen
 from threading import Thread
 from queue import Queue
 ver=version.parse  # from autoupdate.update import ver  # for convenience
+VERSION=ver("1.0.0-beta4")
+
 
 def get_latest_release():
     """
@@ -46,26 +48,17 @@ class YouWannaUpdateDialog(wx.Dialog):
     def __init__(self, parent):
         super().__init__(parent, title="Обновление", style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.message="Доступно обновление. Хотите обновить?"
-        self.ok=False
         self.init_ui()
 
     def init_ui(self):
-        # create buttons:
-        updatebtn=wx.Button(self, label="Обновить")
-        updatebtn.Bind(wx.EVT_BUTTON, self.on_update)
-        cancelbtn=wx.Button(self, label="Отмена")
-        cancelbtn.Bind(wx.EVT_BUTTON, self.on_cancel)
+        # create buttons with id ok and cancel
+        updatebtn=wx.Button(self, label="Обновить", id=wx.ID_OK)
+        cancelbtn=wx.Button(self, label="Отмена", id=wx.ID_CANCEL)
         sizer=wx.BoxSizer(wx.VERTICAL)
         sizer.Add(wx.StaticText(self, label=self.message), 0, wx.ALL, 5)
         sizer.Add(updatebtn, 0, wx.ALL, 5)
         self.SetSizer(sizer)
 
-    def on_update(self, e):
-        self.ok=True
-        self.Close()
-
-    def on_cancel(self, e):
-        self.Close()
 
 
 class ProgressDlg(wx.Dialog):
@@ -102,35 +95,6 @@ def download(response):  # progress will be yielded!
             yield downloaded
     
 
-def update(current_version, parent):  # i think this must be called even before the main window is created
-    def check_update(current_version):
-        # can we busy parent?
-        with wx.BusyInfo("Проверка обновлений..."):
-            release = get_latest_release()  # hope it goes quickly
-            latest_version = ver(release['version'])
-            if current_version < latest_version or release['force_update']:
-                return True, latest_version
-        return False, latest_version
-
-    status, version=check_update(current_version)
-    if status:
-        dlg=YouWannaUpdateDialog(parent)
-        dlg.ShowModal()
-        if not dlg.ok:
-            return  False # we did not update
-        # download and update
-        response=get_response()
-        total=int(response.headers['Content-Length'])
-        progress=ProgressDlg(parent, total)
-        progress.Show()
-        for p in download(response):
-            # if progress is cancelled, we must stop the download
-            if progress.closed:
-                return False
-            progress.gauge.SetValue(p)
-        progress.Destroy()
-        # i think we cannot restart from here. We must close the main window and restart. Lets just return True
-        return True
 
 
 # experimental downloading thread
@@ -139,18 +103,16 @@ def download_thread(response, progcb, distroycb):
         wx.CallAfter(progcb, p)  # call the progress callback in main thread
     wx.CallAfter(distroycb)  # i think destroycb doesn't distroy itself but restarts with distroying the main window
 
+def check_update():  # this will be called in a thread
+    release = get_latest_release()  # hope it goes quickly
+    latest_version = ver(release['version'])
+    if VERSION < latest_version or release['force_update']:
+        return True, latest_version
+    return False, latest_version
 
 
-def update_thread(current_version, parent):
-    def check_update(current_version):
-        # can we busy parent?
-        with wx.BusyInfo("Проверка обновлений..."):
-            release = get_latest_release()  # hope it goes quickly
-            latest_version = ver(release['version'])
-            if current_version < latest_version or release['force_update']:
-                return True, latest_version
-        return False, latest_version
 
+def update_thread(current_version, parent):  # experimental and deprecated
     status, version=check_update(current_version)
     if status:
         dlg=YouWannaUpdateDialog(parent)
@@ -161,8 +123,42 @@ def update_thread(current_version, parent):
         response=get_response()
         total=int(response.headers['Content-Length'])
         progress=ProgressDlg(parent, total)
-        progress.Show()
         t=Thread(target=download_thread, args=(response, progress.update, lambda: restart(parent)))  # restart is called in main thread
         t.start()
+        progress.Show()
         # i think we cannot restart from here. We must close the main window and restart. Lets just return True
         return True  # from now on, the thread will handle the download and restart automatically.
+    
+
+
+# a full class for updating in thread
+# first it will check updates and send (True, latest_version) or (False, VERSION) to self.on_update callback. If no updates, thread will simply end. If there is update, it will wait for a boolean to its queue. If the boolean is True, it will download and update. If False, it will end.
+#  the download starts by sending total size to total callback and then progress callback is called with the progress. When download is finished, it will call the restart callback.
+# all callbacks are wx.CallAfter-ed
+class Updater(Thread):
+    def __init__(self, on_update, on_total, on_progress, on_restart):
+        Thread.__init__(self)
+        self.on_update=on_update
+        self.on_total=on_total
+        self.on_progress=on_progress
+        self.on_restart=on_restart
+        self.queue=Queue()
+        self.daemon=True
+        self.start()
+
+    def run(self):
+        status, version=check_update()
+        wx.CallAfter(self.on_update, status, version)
+        if status:
+            if self.queue.get():  # got True, go on!
+                response=get_response()
+                wx.CallAfter(self.on_total, int(response.headers['Content-Length']))
+                for p in download(response):
+                    if not self.queue.empty() and not self.queue.get():  # really hope that "and" lazy evaluates, queue.get is blocking!
+                        break
+                    wx.CallAfter(self.on_progress, p)
+                wx.CallAfter(self.on_restart)
+        self.queue.task_done()
+
+    def stop(self):  # from the main thread
+        self.queue.put(False)

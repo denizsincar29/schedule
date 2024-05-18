@@ -17,7 +17,6 @@ saveperson: save the person with the given index in results list. The arguments 
 
 
 from schedule import Schedule, auth
-#import schedparser  # this module is already replaced by great new parser.
 from threading import Thread
 from queue import Queue
 from random import choice
@@ -28,7 +27,6 @@ import dotenv # move dotenv check here
 from sys import exit  # pyinstaller can't find it in some cases
 
 dotdotdot=... # for the match statement
-VERSION="1.0.0-beta2"
 
 def randomsound():
     greatsounds=["Alarm4", "Alarm6", "Alarm10"]
