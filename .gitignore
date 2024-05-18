@@ -6,6 +6,7 @@ news.old.txt
 schedule.txt
 *.log
 cache/
+output/
 .env
 *.bat
 *.pyc

@@ -1,14 +1,15 @@
 from schedule import Schedule, noone
 from datetime import datetime, date, time
 from pytz import timezone
+from autoupdate.update import console_update, ver
 import os
 import dotenv
 from sys import exit  # pyinstaller can't find it in some cases
 
 from inputval import inputwhile, input_int, inputwhile_ctrlc, ContinueLoop
 import re
-VERSION="1.0.0-beta2"
-
+VERSION=ver("1.0.0-beta4")
+# to string it, use str(VERSION)
 # compile regex for date with possible omitting of month or year
 regex=re.compile(r"^((?:\d{1,2}))(?:/((?:\d{1,2}))(?:/((?:\d{4}|\d{2})))?)?(?: +((?:together)))?$")
 
@@ -110,6 +111,7 @@ def command(cmd):  # inputwhile callback
 
 
 # main code bookmark
+console_update(VERSION)
 dotenv.load_dotenv(".env")
 print("Программа для просмотра расписания студентов, преподавателей и прочих людей в САФУ.")
 print(f"Автор: Дениз Синджар <deniz@r1oaz.ru> 2024, версия {VERSION}")

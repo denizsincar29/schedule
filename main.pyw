@@ -1,6 +1,6 @@
 # gui for NARFU schedule viewer.
 # WXPython
-
+import sys
 from cytolk import tolk
 import wx
 from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG
@@ -8,8 +8,8 @@ from datepicker import DatePicker
 from app_logic import App
 from parsers.people import noone, People
 from news import news
-VERSION="1.0.0-beta4"
-import sys
+from autoupdate.wxupdate import update, restart, ver
+VERSION=ver("1.0.0-beta4")
 
 class MainWindow(wx.Frame):
     def __init__(self):
@@ -43,6 +43,10 @@ class MainWindow(wx.Frame):
         self.Centre()
         self.Show(True)
         #endregion
+        if (getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')) or True:  # when bug is fixed, remove or True
+            updated=update(VERSION, self)
+            if updated:
+                restart(self)
         if (n:=news()) is not None:
             self.app.send_command(["toast", "Новость!", n, "ms-winsoundevent:Notification.Looping.Call10"])  # call10 is the best sound
             PopUpMSG(self, "Новость!", n).ShowModal()
@@ -122,7 +126,6 @@ class MainWindow(wx.Frame):
             return
         self.app.send_command(["saveperson", result])
         self.authed=True
-        self.SetTitle(f"Расписание САФУ - {self.app.schedule.people.current.name}")
         self.status("Получение расписания...", True)
         self.schedule(self.date_picker.get_selected_date(), True)
 
@@ -130,6 +133,8 @@ class MainWindow(wx.Frame):
         self.control.SetValue(schedule)
         self.status("Расписание получено.", toast)  # if toast is True, it will be spoken
         if toast:
+            # the reason for setting title here is that saveperson command is async and we don't know when it will finish
+            self.SetTitle(f"Расписание САФУ - {self.app.schedule.people.current.name}")
             self.app.send_command(["toast", "Расписание САФУ", schedule])
 
 

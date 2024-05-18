@@ -1,5 +1,0 @@
-;!@Install@!UTF-8!
-Title="Schedule"
-BeginPrompt="Do you want to install Schedule?"
-RunProgram="schedule.exe"
-;!@InstallEnd@!
