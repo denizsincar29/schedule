@@ -9,6 +9,7 @@ cache/
 output/
 .env
 *.bat
+*.exe
 *.pyc
 build/
 dist/
