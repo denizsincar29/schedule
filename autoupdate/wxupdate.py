@@ -133,7 +133,6 @@ class Updater(Thread):
                     wx.CallAfter(self.on_progress, p)
                 wx.CallAfter(self.on_restart)
         wx.CallAfter(self.on_no_update)  # we decided not to update! But i dont recommend not updating my program! :D
-        self.queue.task_done()
 
     def stop(self):  # from the main thread
         self.queue.put(False)

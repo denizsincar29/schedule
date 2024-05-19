@@ -63,6 +63,10 @@ class App(Thread):
                     self.schedule.save_result(command[1], command[2])
                 case "check_credentials":
                     self.check_credentials(command[1], command[2], command[3])
+                case "init":
+                    diffs=self.schedule.get_month(-1)  # -1 is the current month
+                    if len(diffs)>0:
+                        notify("Расписание изменилось!", diffs.human_diff(), audio=randomsound())
                 case "toast":
                     notify(command[1], command[2], audio=command[3])  # audio can be None or filename
                 case "exit":
@@ -85,9 +89,6 @@ class App(Thread):
                     f.write(f"MODEUS_EMAIL={email}\nMODEUS_PASSWORD={password}\n")
             self.schedule=Schedule(email, password)
             self.schedule.load_people()
-            diffs=self.schedule.get_month(-1)  # -1 is the current month
-            if len(diffs)>0:
-                notify("Расписание изменилось!", diffs.human_diff(), audio=randomsound())
         if self.on_auth:
             wxrun(self.on_auth, authed)  # run the function in the main thread
 

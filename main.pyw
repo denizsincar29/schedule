@@ -159,6 +159,7 @@ class MainWindow(wx.Frame):
                 self.authed=True
                 self.SetTitle(f"Расписание САФУ - {self.app.schedule.people.current.name}")
                 self.status("Получение расписания...", True)
+                self.app.send_command(["init"])
                 self.schedule(self.date_picker.get_selected_date(), True)
         elif state==... or state==False:  #noqa
             if state==False:  #noqa
@@ -174,6 +175,7 @@ class MainWindow(wx.Frame):
         self.app.send_command(["saveperson", result])
         self.authed=True
         self.status("Получение расписания...", True)
+        self.app.send_command(["init"])
         self.schedule(self.date_picker.get_selected_date(), True)
 
     def schedule_cb(self, schedule, toast=False):
