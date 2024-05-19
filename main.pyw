@@ -60,17 +60,24 @@ class MainWindow(wx.Frame):
             self.updater.queue.put(False)  # stop the thread
 
     def on_total(self, total):
-        # create a progress dialog with total
-        print("debug: total is", total)
+        # lets stop the app thread. It is not needed while updating.
+        self.app.send_command(["exit"])
         self.progress=ProgressDlg(self, total)
         self.progress.Show()
 
     def on_progress(self, progress):
         # update the progress dialog
         if self.progress:
+            if self.progress.closed:
+                self.updater.stop()
+                self.progress=None  # to not update the progress bar after it is closed
+                # i think we should exit because app thread is stopped
+                self.exit()
+                return
             self.progress.gauge.SetValue(progress)
         else:
-            self.show_error("Странная ошибка. Прогрессбар не создан. Обратитесь к разработчику.", True)
+            # lets close the updater
+            self.updater.stop()
 
     def on_restart(self):
         # close the progress dialog and restart the app

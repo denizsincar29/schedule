@@ -2,6 +2,7 @@ import wx
 import httpx
 import os
 import sys
+from time import time
 from packaging import version
 from subprocess import Popen
 from threading import Thread
@@ -63,18 +64,25 @@ class YouWannaUpdateDialog(wx.Dialog):
 
 class ProgressDlg(wx.Dialog):
     def __init__(self, parent, total):
-        super().__init__(parent, title="Обновление", style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+        super().__init__(parent, title="Обновление", style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER, size=(600, 400))
         self.init_ui(total)
         self.closed=False
 
     def init_ui(self, total):
+        # create a pannel
+        self.panel=wx.Panel(self)
+        # create a sizer, gauge and a button
         sizer=wx.BoxSizer(wx.VERTICAL)
-        self.gauge=wx.Gauge(self, range=total)
+        self.gauge=wx.Gauge(self.panel, range=total, size=(500, 20))
+        self.cancelbtn=wx.Button(self.panel, label="Отменить", id=wx.ID_CANCEL)
         sizer.Add(self.gauge, 0, wx.ALL, 5)
-        self.SetSizer(sizer)
-        self.Bind(wx.EVT_CLOSE, self.on_close)
+        sizer.Add(self.cancelbtn, 0, wx.ALL, 5)
+        self.panel.SetSizer(sizer)
+        self.Bind(wx.EVT_BUTTON, self.on_cancel, self.cancelbtn)
+        self.Bind(wx.EVT_CLOSE, self.on_cancel)
+        
 
-    def on_close(self, e):
+    def on_cancel(self, e):
         self.closed=True
         self.Destroy()
 
@@ -84,7 +92,7 @@ def get_response():  # get headers.
     url = f"https://deniz.r1oaz.ru/schedule/setup.exe"
     with httpx.Client() as client:
         headers = client.head(url)
-        # return total size
+        # return total size in bytes
         return int(headers.headers['Content-Length'])
 
 def download():  # progress will be yielded!
@@ -129,8 +137,9 @@ class Updater(Thread):
                 total=get_response()
                 wx.CallAfter(self.on_total, total)
                 for p in download():
-                    if not self.queue.empty() and not self.queue.get():  # really hope that "and" lazy evaluates, queue.get is blocking!
-                        break
+                    if not self.queue.empty():
+                        print("we are stopping")
+                        return  # dont call on_restart
                     wx.CallAfter(self.on_progress, p)
                 wx.CallAfter(self.on_restart)
         self.queue.task_done()
