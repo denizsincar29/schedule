@@ -61,30 +61,16 @@ class YouWannaUpdateDialog(wx.Dialog):
         self.SetSizer(sizer)
 
 
-
-class ProgressDlg(wx.Dialog):
+class ProgressDlg(wx.ProgressDialog):
     def __init__(self, parent, total):
-        super().__init__(parent, title="Обновление", style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER, size=(600, 400))
-        self.init_ui(total)
-        self.closed=False
+        super().__init__("Обновление", "Идёт обновление программы. Пожалуйста подождите.", total, parent, wx.PD_ELAPSED_TIME | wx.PD_ESTIMATED_TIME | wx.PD_REMAINING_TIME | wx.PD_CAN_ABORT | wx.PD_AUTO_HIDE)
 
-    def init_ui(self, total):
-        # create a pannel
-        self.panel=wx.Panel(self)
-        # create a sizer, gauge and a button
-        sizer=wx.BoxSizer(wx.VERTICAL)
-        self.gauge=wx.Gauge(self.panel, range=total, size=(500, 20))
-        self.cancelbtn=wx.Button(self.panel, label="Отменить", id=wx.ID_CANCEL)
-        sizer.Add(self.gauge, 0, wx.ALL, 5)
-        sizer.Add(self.cancelbtn, 0, wx.ALL, 5)
-        self.panel.SetSizer(sizer)
-        self.Bind(wx.EVT_BUTTON, self.on_cancel, self.cancelbtn)
-        self.Bind(wx.EVT_CLOSE, self.on_cancel)
-        
+    @property
+    def closed(self):
+        if self.WasCancelled():
+            self.Destroy()
+        return self.WasCancelled()
 
-    def on_cancel(self, e):
-        self.closed=True
-        self.Destroy()
 
 
 # make our own 2 functions instead of download release. One will return response (to get total size) and other will download the file
@@ -138,7 +124,6 @@ class Updater(Thread):
                 wx.CallAfter(self.on_total, total)
                 for p in download():
                     if not self.queue.empty():
-                        print("we are stopping")
                         return  # dont call on_restart
                     wx.CallAfter(self.on_progress, p)
                 wx.CallAfter(self.on_restart)

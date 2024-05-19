@@ -74,7 +74,7 @@ class MainWindow(wx.Frame):
                 # i think we should exit because app thread is stopped
                 self.exit()
                 return
-            self.progress.gauge.SetValue(progress)
+            self.progress.Update(progress)
         else:
             # lets close the updater
             self.updater.stop()
