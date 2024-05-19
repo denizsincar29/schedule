@@ -1,16 +1,26 @@
 [setup]
 AppName=Schedule
 AppVersion=1.0.0
-DefaultDirName={drive:\}\schedule
+DefaultDirName={pf}\Schedule
 OutputBaseFilename="setup"
+;PrivilegesRequired=lowest
 
-[files]
+[Files]
 Source: "dist/Schedule.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist/schedule_console.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist/nvdaControllerClient64.dll"; DestDir: "{app}"
 Source: "dist/SAAPI64.dll"; DestDir: "{app}"
-Source: "news.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "readme.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
+; news must always be news.txt inside the installer, but the actual file can be news.txt or news.old.txt
+Source: "{code:GetNewsFile}"; DestDir: "{app}"; Flags: ignoreversion external; DestName: "news.txt"
+
+[Code]
+function GetNewsFile(Param: String): String;
+begin
+    Result := 'news.txt';
+    if not FileExists(Result) then
+        Result := 'news.old.txt';
+end;
 
 [Tasks]
 Name: desktopicon; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"
@@ -27,4 +37,4 @@ Name: "{commondesktop}\Schedule"; Filename: "{app}\Schedule.exe"; WorkingDir: "{
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [run]
-Filename: "{app}\Schedule.exe"; Description: "{cm:LaunchProgram,Schedule}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Schedule.exe"; Description: "{cm:LaunchProgram,Schedule}"; Flags: nowait postinstall

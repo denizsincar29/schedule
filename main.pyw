@@ -14,9 +14,10 @@ class MainWindow(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, parent=None, title=f"Расписание САФУ ({VERSION})", size=(800, 600), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         self.app=App(self.check_auth_cb)
-        self.updater=Updater(self.on_update, self.on_total, self.on_progress, self.on_restart)  # I didn't think of a better way to implement this
+        self.updater=Updater(self.on_update, self.on_total, self.on_progress, self.on_restart, self.on_no_update)
         self.progress=None  # to not get attribute error
         self.authed=False
+        self.must_check_auth=(False, False)
         #region GUI
         self.panel = wx.Panel(self, -1)
         self.hint = wx.StaticText(self.panel, label="Примечание. Вы можете выделить дату начала и конца, чтобы получить расписание на этот диапазон.", size=(200, 50))
@@ -45,9 +46,6 @@ class MainWindow(wx.Frame):
         self.Show(True)
         #endregion
         #if (getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')) or True:  # when bug is fixed, remove or True
-        if (n:=news()) is not None:
-            self.app.send_command(["toast", "Новость!", n, "ms-winsoundevent:Notification.Looping.Call10"])  # call10 is the best sound
-            PopUpMSG(self, "Новость!", n).ShowModal()
         self.status("Авторизация...")
 
     def on_update(self, status: bool, version):
@@ -56,8 +54,19 @@ class MainWindow(wx.Frame):
             with YouWannaUpdateDialog(self) as ywud:
                 if ywud.ShowModal() == wx.ID_OK:
                     self.updater.queue.put(True)  # start the update
+                else:
+                    self.updater.queue.put(False)
         else:
             self.updater.queue.put(False)  # stop the thread
+
+    def on_no_update(self):
+        # we decided not to update. Proceed with the app
+        if (n:=news()) is not None:
+            self.app.send_command(["toast", "Новость!", n, "ms-winsoundevent:Notification.Looping.Call10"])  # call10 is the best sound
+            PopUpMSG(self, "Новость!", n).ShowModal()
+        if self.must_check_auth[0]:  # we scheduled check_auth_cb while updating
+            self.check_auth_cb(self.must_check_auth[1])
+
 
     def on_total(self, total):
         # lets stop the app thread. It is not needed while updating.
@@ -137,6 +146,11 @@ class MainWindow(wx.Frame):
         # that's all. This function ends here. The schedule will be displayed in the control when the app thread finishes the command.
 
     def check_auth_cb(self, state):
+        if self.progress:  # dont do anything if progress dialog is open. We dont want to show any dialogs while updating
+            return
+        if not self.updater.dead:
+            self.must_check_auth=(True, state)  # here we end.
+            return
         if state==True:  #noqa
             #we ask for name
             if self.app.schedule.people.current==noone:

@@ -7,8 +7,8 @@ from packaging import version
 from subprocess import Popen
 from threading import Thread
 from queue import Queue
+from .version import VERSION
 ver=version.parse  # from autoupdate.update import ver  # for convenience
-VERSION=ver("1.0.0-beta4")
 
 
 def get_latest_release():
@@ -40,7 +40,7 @@ def restart(wxparent=None):
     if wxparent is not None:
         wxparent.Close()  # close the main window
     # popen inno setup setup.exe --silent
-    Popen("setup.exe --silent", shell=True)
+    Popen(["setup.exe", "/SILENT", "/FORCECLOSEAPPLICATIONS"])
     sys.exit()
 
 
@@ -105,28 +105,34 @@ def check_update():  # this will be called in a thread
 #  the download starts by sending total size to total callback and then progress callback is called with the progress. When download is finished, it will call the restart callback.
 # all callbacks are wx.CallAfter-ed
 class Updater(Thread):
-    def __init__(self, on_update, on_total, on_progress, on_restart):
+    def __init__(self, on_update, on_total, on_progress, on_restart, on_no_update):
         Thread.__init__(self)
         self.on_update=on_update
         self.on_total=on_total
         self.on_progress=on_progress
         self.on_restart=on_restart
+        self.on_no_update=on_no_update
         self.queue=Queue()
         self.daemon=True
         self.start()
 
+    @property
+    def dead(self):
+        return not self.is_alive()
+
     def run(self):
         status, version=check_update()
         wx.CallAfter(self.on_update, status, version)
-        if status:
-            if self.queue.get():  # got True, go on!
+        if status:  # has update
+            if self.queue.get():  # we wanna update! go ahead!
                 total=get_response()
                 wx.CallAfter(self.on_total, total)
                 for p in download():
                     if not self.queue.empty():
-                        return  # dont call on_restart
+                        return # stop download
                     wx.CallAfter(self.on_progress, p)
                 wx.CallAfter(self.on_restart)
+        wx.CallAfter(self.on_no_update)  # we decided not to update! But i dont recommend not updating my program! :D
         self.queue.task_done()
 
     def stop(self):  # from the main thread
