@@ -1,5 +1,6 @@
 from datetime import date, time, datetime
 from pytz import timezone
+from .russian_date import russian_date
 from dataclasses import dataclass, field
 from copy import deepcopy
 from typing import Self
@@ -28,6 +29,7 @@ class Event:
     - room_name (str): The name of the room where the event takes place.
     - address (str): The address of the room where the event takes place.
     - status (str): The status of the event.
+    - format (str): The format of the event.
 
     Optional Attributes:
     - diff (int): The difference between this event and another event.
@@ -42,10 +44,11 @@ class Event:
     room_name: str
     address: str
     status: str
+    format: str=""
     diff: int=0  # 0- no diff, 1- new, -1- removed, 2- changed
     changed: list=field(default_factory=list)  # list of changed fields
 
-      #region magic methods
+    #region magic methods
     def __eq__(self, other):
         return self.event_id==other.event_id
 
@@ -53,7 +56,7 @@ class Event:
         return self.event_id!=other.event_id
 
     def __str__(self):  # human readable in russian
-        return f"Пара {self.event_num}: с {self.event_start:%H:%M} до {self.event_end:%H:%M}. {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}. Статус: {self.status}"
+        return f"Пара {self.event_num}: с {self.event_start:%H:%M} до {self.event_end:%H:%M}. {self.format}, {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}."
 
     def __repr__(self):  # for debugging
         return f"Event {self.event_num}: {self.event_name}. Teacher: {self.teacher}. Room: {self.room_name}. Address: {self.address}. Status: {self.status}, Diff: {self.diff}, Changed: {self.changed}"
@@ -113,6 +116,7 @@ class Event:
             "room_name": self.room_name,
             "address": self.address,
             "status": self.status,
+            "format": self.format,
             "diff": self.diffstr
         }
 
@@ -143,7 +147,9 @@ class Event:
         edate=date.fromisoformat(data["date"])
         estime=time.fromisoformat(data["start_time"])
         eetime=time.fromisoformat(data["end_time"])
-        return cls(data["id"], data["event"], edate, estime, eetime, data["name"], data["teacher"], data["room_name"], data["address"], data["status"], diff, changed)
+        # if there is no format, then old cache is used. But soon the app will get new cache with format
+        format=data["format"] if "format" in data else ""
+        return cls(data["id"], data["event"], edate, estime, eetime, data["name"], data["teacher"], data["room_name"], data["address"], data["status"], format, diff, changed)
 
     @property
     def diffstr(self) -> str:
@@ -187,6 +193,8 @@ class Event:
             self.changed.append("address")
         if self.status!=other.status:
             self.changed.append("status")
+        if self.format!=other.format:
+            self.changed.append("format")
         if len(self.changed)==0:
             diff=0
         return Event(self.event_id, self.event_num, self.event_date, self.event_start, self.event_end, self.event_name, self.teacher, self.room_name, self.address, self.status, diff, self.changed)
@@ -219,6 +227,8 @@ class Event:
                     msg+=f"Изменен адрес аудитории на {self.address}"
                 elif field=="status":
                     msg+=f"Изменен статус на {self.status}"
+                elif field=="format":
+                    msg+=f"Изменен формат проведения на {self.format}"
         return msg
 
     def humanize(self) -> str:
@@ -281,7 +291,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         prev_date=date(2020, 1, 1)# to instantly print the first date
         for event in self.events:
             if event.event_date!=prev_date:
-                msg+=f"\n{event.event_date:%d/%m}"
+                msg+=f"\n{russian_date(event.event_date)}:"
                 prev_date=event.event_date
             msg+=f"\n{event}"
         return msg.strip()
@@ -304,7 +314,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
     def __add__(self, other):
         # add but remove duplicates
         evt_set=set(self.events+other.events)
-        return Events(sorted(list(evt_set)))  # sorted by start time
+        return Events(sorted(list(evt_set)), self.nocache or other.nocache)
 
     def __sub__(self, other):
         # return self.events-other.events # we cannot sub lists
@@ -351,8 +361,10 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         parsed_events = []
         events = data['events']
         for event in events:
+            #print(event)
             event_id = event['id']
-            event_name = mess.get_name(event['_links']['course-unit-realization']['href'][1:], data)
+            event_name = mess.get_name(event['_links']['course-unit-realization']['href'][1:], data) if 'course-unit-realization' in event['_links'] else event["name"]+", "+event["nameShort"]
+            event_format = mess.get_type_and_format_name(event_id, data)
             event_start = datetime.fromisoformat(event['start']).time()
             event_end = datetime.fromisoformat(event['end']).time()
             event_date = datetime.fromisoformat(event['start']).date()
@@ -360,7 +372,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
             event_status = event['holdingStatus']['name']
             room_name, address = mess.get_room(event_id, data)
             teacher = mess.get_teacher(event_id, data)
-            parsed_events.append(Event(event_id, event_num, event_date, event_start, event_end, event_name, teacher, room_name, address, event_status))  # diff is 0 by default
+            parsed_events.append(Event(event_id, event_num, event_date, event_start, event_end, event_name, teacher, room_name, address, event_status, event_format))
         return cls(sorted(parsed_events))
 
     @classmethod

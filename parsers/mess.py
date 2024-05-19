@@ -100,3 +100,74 @@ def get_person_info(person_id, data):
     return None, None  # incorrect id
 
 
+def get_format_id(event_id, data):
+    """
+    Retrieves the format of an event based on its ID from the given data.
+
+    Parameters:
+    - event_id (int): The ID of the event to retrieve the format for.
+    - data (dict): The data containing the event formats.
+
+    Returns:
+    - str or None: The format of the event if found, None otherwise.
+    """
+    # data["events"][indx][]
+    events = data['events']
+    for event in events:
+        if event['id'] == event_id:
+            return event['formatId']
+    return None
+
+types_formats={
+    "LECT": "Лекция",
+    "SEMI": "Практическое занятие",
+    "LAB": "Лабораторная работа",
+    "MID_CHECK": "Контрольная работа",
+    "EXAMINATION": "Экзамен",
+    "PRETEST": "Предэкзаменационная аттестация",
+    None: ""  # some events don't have a type or format
+}
+
+def get_type_id(event_id, data):
+    """
+    Retrieves the type of an event based on its ID from the given data.
+
+    Parameters:
+    - event_id (int): The ID of the event to retrieve the type for.
+    - data (dict): The data containing the event types.
+
+    Returns:
+    - str or None: The type of the event if found, None otherwise.
+    """
+    # data["events"][indx][]
+    events = data['events']
+    for event in events:
+        if event['id'] == event_id:
+            return event['typeId']
+    return None
+
+def get_type_and_format_name(event_id, data):
+    """
+    Retrieves the type and format of an event based on its ID from the given data.
+
+    Parameters:
+    - event_id (int): The ID of the event to retrieve the type and format for.
+    - data (dict): The data containing the events.
+
+    Returns:
+    - str: The type and format of the event.
+    """
+    type_id = get_type_id(event_id, data)
+    format_id = get_format_id(event_id, data)
+    type_name=""
+    format_name=""
+    if type_id in types_formats:
+        type_name=types_formats[type_id]
+    else:
+        type_name=f"Неизвестный тип {type_id}"
+    if format_id in types_formats:
+        format_name=types_formats[format_id]
+    else:
+        format_name=f"Неизвестный формат {format_id}"
+    # sometimes the strings are empty, so i have came up with this clever solution
+    return ", ".join([type_name, format_name])  # empty string, one of them or both separated by comma+space

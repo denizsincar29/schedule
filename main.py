@@ -111,7 +111,7 @@ def command(cmd):  # inputwhile callback
 
 
 # main code bookmark
-console_update(VERSION)
+console_update()
 dotenv.load_dotenv(".env")
 print("Программа для просмотра расписания студентов, преподавателей и прочих людей в САФУ.")
 print(f"Автор: Дениз Синджар <deniz@r1oaz.ru> 2024, версия {VERSION}")

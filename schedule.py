@@ -172,13 +172,6 @@ class Schedule:
         end_time = start_time + relativedelta(months=1) - timedelta(seconds=1)  # i hope we don't have university events in 23:59 lol
         sched=self.get_schedule(person, start_time, end_time)
         diff=sched.to_cache(month, person.person_id)
-        # delete previous month file if it exists. (also december file if january counts as previous month)
-        month=12 if start_time.month==1 else start_time.month-1
-        try:
-            os.remove(f"cache/{month}.{person.person_id}.json")
-        except FileNotFoundError:
-            pass
-        # filter out diffs that are outdated
         return diff  # if there is no diff, it will return empty Events object
 
 
@@ -195,7 +188,14 @@ class Schedule:
         Events: List of events that match the filters.
         """
         # flatten the list of all events of the range of months, then filter out the events that are not in the range of dates.
-        return sum([Events.from_cache(month, person.person_id) for month in range(start_date.month, end_date.month+1)], Events()).get_events_between_dates(start_date, end_date)  # what a clever one-liner!
+        #return sum([(cache if (cache:=Events.from_cache(month, person.person_id)).nocache else self.get_month(month, person)) for month in range(start_date.month, end_date.month+1)], Events()).get_events_between_dates(start_date, end_date)  # wow, it became huger than before!
+        events=Events()
+        for month in range(start_date.month, end_date.month+1):
+            cache=Events.from_cache(month, person.person_id)
+            if cache.nocache:
+                cache=self.get_month(month, person) # yep, go grab that months.
+            events+=cache
+        return events.get_events_between_dates(start_date, end_date)
 
     def search_person_from_cache(self, term: str, by_id: bool) -> People:
         """
