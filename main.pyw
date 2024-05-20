@@ -1,6 +1,8 @@
 # gui for NARFU schedule viewer.
 # WXPython
 import sys
+import os
+from shutil import rmtree
 from cytolk import tolk
 import wx
 from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG
@@ -59,6 +61,7 @@ class MainWindow(wx.Frame):
         filemenu.Append(wx.ID_FILE1, "Информация о паре\tCTRL+G", "Показать, кто идёт на эту пару")
         filemenu.AppendCheckItem(wx.ID_ADD, "Чюжое расписание", "Добавить друга для просмотра его расписания")
         filemenu.AppendCheckItem(wx.ID_FILE2, "Просмотреть пересечение расписаний", "Просмотреть общие пары с другом")
+        filemenu.Append(wx.ID_DELETE, "Очистить кеш", "Очистить кеш с расписанием")
         filemenu.Append(wx.ID_EXIT, "Выход\tAlt+F4", "Выход из программы")
         helpmenu = wx.Menu()
         helpmenu.Append(wx.ID_ABOUT, "О программе\tF1", "О программе")
@@ -67,7 +70,9 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnSaveToTxt, id=wx.ID_SAVE)
         self.Bind(wx.EVT_MENU, self.who_goes, id=wx.ID_FILE1)
         self.Bind(wx.EVT_MENU, self.on_friend, id=wx.ID_ADD)
+        self.Bind(wx.EVT_MENU, self.on_clear_cache, id=wx.ID_DELETE)
         self.Bind(wx.EVT_MENU, self.on_together, id=wx.ID_FILE2)
+
         self.Bind(wx.EVT_MENU, self.exit, id=wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
         # shortcuts
@@ -78,6 +83,13 @@ class MainWindow(wx.Frame):
         ])
         self.SetAcceleratorTable(accel_tbl)
         self.SetMenuBar(menubar)
+
+    def on_clear_cache(self, event):
+        rmtree("cache", ignore_errors=True)  # remove the cache folder
+        os.remove("people.json")
+        # msg box and exit.
+        wx.MessageBox("Кеш очищен. Перезапустите программу.", "Кеш очищен", wx.OK | wx.ICON_INFORMATION)
+        self.exit()
 
     def on_friend(self, event):
         self.itsme=not event.IsChecked()  # if checked, it is not me
@@ -162,11 +174,15 @@ class MainWindow(wx.Frame):
             tolk.output(text)
 
     def OnSaveToTxt(self, event):
-        # save to schedule.txt
-        event.Skip()
-        with open("schedule.txt", "w", encoding="UTF-8") as f:
+        with wx.FileDialog(self, "Сохранить расписание", defaultFile="schedule.txt", wildcard="Text files (*.txt)|*.txt", style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
+            if fileDialog.ShowModal() == wx.ID_CANCEL:
+                return
+            # save the schedule to the file
+            pathname = fileDialog.GetPath()
+        with open(pathname, "w", encoding="utf-8") as f:
             f.write(self.control.GetValue())
-        self.status("Расписание сохранено в schedule.txt")
+        self.status(f"Расписание сохранено в {pathname}")
+        event.Skip()
 
 
     def schedule(self, dates=[], toast=False):
@@ -194,7 +210,6 @@ class MainWindow(wx.Frame):
             else:
                 self.authed=True
                 self.status("Получение расписания...", True)
-                self.app.send_command(["init"])
                 self.schedule(self.date_picker.get_selected_date(), True)
         elif state==... or state==False:  #noqa
             if state==False:  #noqa
@@ -210,7 +225,6 @@ class MainWindow(wx.Frame):
         self.app.send_command(["saveperson", result, itsme])
         if itsme:
             self.authed=True
-            self.app.send_command(["init"])
         self.status("Получение расписания...", True)
         self.schedule(self.date_picker.get_selected_date(), True)
 
@@ -252,7 +266,7 @@ class MainWindow(wx.Frame):
             else:
                 self.exit()  # user pressed cancel
 
-    def ask_fullname(self, itsme=False):
+    def ask_fullname(self, itsme=True):
         with GUInput(self, "Введите ФИО") as guinput:
             status=guinput.ShowModal() == wx.ID_OK
             if status:

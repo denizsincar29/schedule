@@ -33,3 +33,9 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 [run]
 Filename: "{app}\Schedule.exe"; Description: "{cm:LaunchProgram,Schedule}"; Flags: nowait postinstall
 
+[Uninstall]
+; full, all files and registry keys
+Type: full
+; delete the installation directory and registry keys
+Dir: "{app}"
+

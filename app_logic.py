@@ -66,12 +66,11 @@ class App(Thread):
                     if command[2] is None:
                         command[2]=True  # we need to pass a boolean to the function
                     self.schedule.save_result(command[1], command[2])
-                case "check_credentials":
-                    self.check_credentials(command[1], command[2], command[3])
-                case "init":
                     diffs=self.schedule.get_month(-1)  # -1 is the current month
                     if len(diffs)>0:
                         notify("Расписание изменилось!", diffs.human_diff(), audio=randomsound())
+                case "check_credentials":
+                    self.check_credentials(command[1], command[2], command[3])
                 case "who_goes": # command takes cursor position of an event and returns who goes there
                     evt=self.schedule.last_events.get_event_by_strindex(command[1])
                     if evt is None:
