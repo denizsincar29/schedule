@@ -324,6 +324,28 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         return [event.__dict__() for event in self.events]
     #endregion
 
+    def tokenize(self) -> list[tuple[Event, int]]:
+        """returns the indices where each event starts in the human-readable string."""
+        # copy paste from __str__ method
+        if len(self.events)==0:
+            return []
+        msg=""
+        prev_date=date(2020, 1, 1)# to instantly print the first date
+        tokens=[]
+        for event in self.events:
+            if event.event_date!=prev_date:
+                msg+=f"\n{russian_date(event.event_date)}:"
+                prev_date=event.event_date
+            tokens.append((event, len(msg)))
+            msg+=f"\n{event}"
+        return tokens
+
+    def get_event_by_strindex(self, index: int) -> Event:  # making this for getting event by highliting the event in the text field
+        """returns the event by the index of the human-readable string."""
+        evt= [event for event, start in self.tokenize() if start<=index<(start+len(str(event)))]
+        return evt[0] if len(evt)>0 else None
+
+
     def pprint(self, person: people.Person=people.noone) -> str:
         """
         Prints the events in a human-readable format.

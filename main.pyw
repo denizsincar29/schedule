@@ -18,6 +18,8 @@ class MainWindow(wx.Frame):
         self.progress=None  # to not get attribute error
         self.authed=False
         self.must_check_auth=(False, False)
+        self.itsme=True  # get my schedule. When it is False, it gets friend's schedule
+        self.together=False  # get the schedule together with the friend, if False, get only the friend's schedule
         #region GUI
         self.panel = wx.Panel(self, -1)
         self.hint = wx.StaticText(self.panel, label="Примечание. Вы можете выделить дату начала и конца, чтобы получить расписание на этот диапазон.", size=(200, 50))
@@ -47,6 +49,58 @@ class MainWindow(wx.Frame):
         #endregion
         #if (getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')) or True:  # when bug is fixed, remove or True
         self.status("Авторизация...")
+
+    def menubar(self):
+        # create a menubar
+        menubar = wx.MenuBar()
+        filemenu = wx.Menu()
+        # save to txt
+        filemenu.Append(wx.ID_SAVE, "Сохранить в файл\tCTRL+S", "Сохранить расписание в файл")
+        filemenu.Append(wx.ID_FILE1, "Информация о паре\tCTRL+G", "Показать, кто идёт на эту пару")
+        filemenu.AppendCheckItem(wx.ID_ADD, "Чюжое расписание", "Добавить друга для просмотра его расписания")
+        filemenu.AppendCheckItem(wx.ID_FILE2, "Просмотреть пересечение расписаний", "Просмотреть общие пары с другом")
+        filemenu.Append(wx.ID_EXIT, "Выход\tAlt+F4", "Выход из программы")
+        helpmenu = wx.Menu()
+        helpmenu.Append(wx.ID_ABOUT, "О программе\tF1", "О программе")
+        menubar.Append(filemenu, "Файл")
+        menubar.Append(helpmenu, "Помощь")
+        self.Bind(wx.EVT_MENU, self.OnSaveToTxt, id=wx.ID_SAVE)
+        self.Bind(wx.EVT_MENU, self.who_goes, id=wx.ID_FILE1)
+        self.Bind(wx.EVT_MENU, self.on_friend, id=wx.ID_ADD)
+        self.Bind(wx.EVT_MENU, self.on_together, id=wx.ID_FILE2)
+        self.Bind(wx.EVT_MENU, self.exit, id=wx.ID_EXIT)
+        self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
+        # shortcuts
+        accel_tbl = wx.AcceleratorTable([
+            (wx.ACCEL_CTRL, ord('S'), wx.ID_SAVE),
+            (0, wx.WXK_F1, wx.ID_ABOUT),
+            (wx.ACCEL_CTRL, ord('G'), wx.ID_FILE1),
+        ])
+        self.SetAcceleratorTable(accel_tbl)
+        self.SetMenuBar(menubar)
+
+    def on_friend(self, event):
+        self.itsme=not event.IsChecked()  # if checked, it is not me
+        if not self.itsme:
+            self.ask_fullname(False)  # ask for friend's name
+        else:
+            self.together=False  # if it is me, it is not together!
+            self.GetMenuBar().Check(wx.ID_FILE2, False)  # uncheck the together menu item
+            # save the friend as noone
+            self.app.schedule.people.friend=noone
+            self.schedule(self.date_picker.get_selected_date(), True)
+        event.Skip()
+
+    def on_together(self, event):
+        self.together=event.IsChecked()
+        if self.together and self.itsme:  # if we are together, we need to ask for friend's name
+            self.ask_fullname(False)
+            self.itsme=False
+            self.GetMenuBar().Check(wx.ID_ADD, True)  # check the friend menu item
+        #if not itsme, everything is already set. Just schedule. But we can't be together without a friend because the on_friend unchecks this menu item.
+
+        self.schedule(self.date_picker.get_selected_date(), True)
+        event.Skip()
 
     def on_update(self, status: bool, version):
         # if status, show do you wanna update yes no dialog. If yes, self.updator.q.put(True)
@@ -94,24 +148,6 @@ class MainWindow(wx.Frame):
             self.progress.Close()
         restart(self)  # it receives wxparent as self to close the main window
 
-    def menubar(self):
-        # create a menubar
-        menubar = wx.MenuBar()
-        filemenu = wx.Menu()
-        # save to txt
-        filemenu.Append(wx.ID_SAVE, "Сохранить в файл\tCTRL+S", "Сохранить расписание в файл")
-        filemenu.Append(wx.ID_EXIT, "Выход\tAlt+F4", "Выход из программы")
-        helpmenu = wx.Menu()
-        helpmenu.Append(wx.ID_ABOUT, "О программе\tF1", "О программе")
-        menubar.Append(filemenu, "Файл")
-        menubar.Append(helpmenu, "Помощь")
-        self.Bind(wx.EVT_MENU, self.OnSaveToTxt, id=wx.ID_SAVE)
-        self.Bind(wx.EVT_MENU, self.exit, id=wx.ID_EXIT)
-        self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
-        # shortcuts
-        accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('S'), wx.ID_SAVE), (0, wx.WXK_F1, wx.ID_ABOUT)])
-        self.SetAcceleratorTable(accel_tbl)
-        self.SetMenuBar(menubar)
 
     def OnAbout(self, event):
         # make the popup like in news with readme.txt
@@ -142,7 +178,7 @@ class MainWindow(wx.Frame):
         start_date=min(dates)
         end_date=max(dates) if len(dates)>1 else None  # if there is only one date, end_date is None
         schedcb=lambda schedule: self.schedule_cb(schedule, toast)
-        self.app.send_command(["schedule", start_date, end_date, None], schedcb)
+        self.app.send_command(["schedule", start_date, end_date, self.itsme, self.together], schedcb)
         # that's all. This function ends here. The schedule will be displayed in the control when the app thread finishes the command.
 
     def check_auth_cb(self, state):
@@ -157,7 +193,6 @@ class MainWindow(wx.Frame):
                 self.ask_fullname()
             else:
                 self.authed=True
-                self.SetTitle(f"Расписание САФУ - {self.app.schedule.people.current.name}")
                 self.status("Получение расписания...", True)
                 self.app.send_command(["init"])
                 self.schedule(self.date_picker.get_selected_date(), True)
@@ -166,16 +201,17 @@ class MainWindow(wx.Frame):
                 self.show_error("Неверный email или пароль.")
             self.ask_emailnpassword()
 
-    def search_cb(self, results):
+    def search_cb(self, results, itsme=True):
         result=self.choose_from_results(results)
         if result is None:
             self.show_error("Ничего не найдено или не выбрано.")
-            self.ask_fullname()
+            self.ask_fullname(itsme)
             return
-        self.app.send_command(["saveperson", result])
-        self.authed=True
+        self.app.send_command(["saveperson", result, itsme])
+        if itsme:
+            self.authed=True
+            self.app.send_command(["init"])
         self.status("Получение расписания...", True)
-        self.app.send_command(["init"])
         self.schedule(self.date_picker.get_selected_date(), True)
 
     def schedule_cb(self, schedule, toast=False):
@@ -183,8 +219,28 @@ class MainWindow(wx.Frame):
         self.status("Расписание получено.", toast)  # if toast is True, it will be spoken
         if toast:
             # the reason for setting title here is that saveperson command is async and we don't know when it will finish
-            self.SetTitle(f"Расписание САФУ - {self.app.schedule.people.current.name}")
+            if not self.together and not self.itsme:  # only friend's schedule
+                title=f"Расписание САФУ - {self.app.schedule.people.friend.name}"
+            elif self.together and not self.itsme:  # together with friend
+                title=f"Расписание САФУ - {self.app.schedule.people.current.name} и {self.app.schedule.people.friend.name}"
+            else:  # only my schedule. Dont give a hell about together
+                title=f"Расписание САФУ - {self.app.schedule.people.current.name}"
+            self.SetTitle(title)
             self.app.send_command(["toast", "Расписание САФУ", schedule])
+
+    def who_goes(self, event):  # before it was who_goes, but now it shows the event info
+        # an event starts with the word "Пара" and ends with the next "Пара" or the end of the text. Return the event text
+        cursor=self.control.GetInsertionPoint()
+        #who_goes_cb=lambda result, evt: PopUpMSG(self, "Информация о паре", f"{evt}\n\nКто записан на пару:\n{result}").ShowModal()
+        # lets define callback function. If both args are "", it speaks курсор не наведён на пару
+        def who_goes_cb(result, evt):
+            if result=="" and evt=="":
+                self.status("Курсор не наведён на пару.")
+            else:
+                PopUpMSG(self, "Информация о паре", f"{evt}\n\nКто записан на пару:\n{result}").ShowModal()
+        self.app.send_command(["who_goes", cursor], who_goes_cb)
+        event.Skip()
+
 
 
     def ask_emailnpassword(self):
@@ -201,7 +257,7 @@ class MainWindow(wx.Frame):
             status=guinput.ShowModal() == wx.ID_OK
             if status:
                 name=guinput.value
-                self.app.send_command(["fullname", name], self.search_cb)
+                self.app.send_command(["fullname", name, itsme], self.search_cb)
             else:
                 if itsme: # if asked for my name, exit. In the future it can ask for friend's name for getting their schedule.
                     self.exit()

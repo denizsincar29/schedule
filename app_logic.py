@@ -16,7 +16,7 @@ saveperson: save the person with the given index in results list. The arguments 
 '''
 
 
-from schedule import Schedule, auth
+from schedule import Schedule, auth, noone
 from threading import Thread
 from queue import Queue
 from random import choice
@@ -51,12 +51,17 @@ class App(Thread):
             command, cb = self.forward.get()  # cb is a callback function to run after the command is executed
             if cb is None:
                 cb=lambda *args, **kwargs: None
-            command.extend([None]*(4-len(command)))
+            command.extend([None]*(5-len(command)))
             match command[0]:
                 case "schedule":
-                    wxrun(cb, self.schedule.schedule(self.schedule.people.current, command[1], command[2], command[3]).humanize())
+                    itsme=command[3] if command[3] is not None else True
+                    together=command[4] if command[4] is not None else False
+                    c_person=self.schedule.people.current if itsme else self.schedule.people.friend
+                    t_person=self.schedule.people.current if not itsme and together else noone  # if we are together, we need to pass the friend. Otherwise, we pass noone
+                    wxrun(cb, self.schedule.schedule(c_person, command[1], command[2], t_person).humanize())
+
                 case "fullname":
-                    wxrun(cb, self.schedule.search_person(command[1], False))  # by_id is False
+                    wxrun(cb, self.schedule.search_person(command[1], False), command[2])
                 case "saveperson":
                     if command[2] is None:
                         command[2]=True  # we need to pass a boolean to the function
@@ -67,6 +72,12 @@ class App(Thread):
                     diffs=self.schedule.get_month(-1)  # -1 is the current month
                     if len(diffs)>0:
                         notify("Расписание изменилось!", diffs.human_diff(), audio=randomsound())
+                case "who_goes": # command takes cursor position of an event and returns who goes there
+                    evt=self.schedule.last_events.get_event_by_strindex(command[1])
+                    if evt is None:
+                        wxrun(cb, "", "")
+                    else:
+                        wxrun(cb, str(self.schedule.who_goes(evt)), str(evt))
                 case "toast":
                     notify(command[1], command[2], audio=command[3])  # audio can be None or filename
                 case "exit":

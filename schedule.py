@@ -5,7 +5,7 @@ import os
 from modeus import modeus_parse_token, get_schedule, search_person, who_goes, modeus_auth
 # getting rid of old schedparser and using new one
 from parsers.events import Event, Events
-from parsers.people import Person, People, noone  # noone is a singleton
+from parsers.people import Person, People, noone, Employee
 
 from pytz import timezone
 
@@ -253,7 +253,7 @@ class Schedule:
         return True
 
 
-    def who_goes(self, event: Event) -> dict:
+    def who_goes(self, event: Event) -> People:
         """
         Gets who goes to an event. A list of people bound to the event.
 
@@ -261,10 +261,15 @@ class Schedule:
         event (Event): The event to get who goes.
 
         Returns:
-        dict: The who goes data.
+        People: List of people who goes to the event.
         """
         self.check_token()
-        return who_goes(event.event_id, self.token)
+        ppl=People.from_who_goes(who_goes(event.event_id, self.token))  # this data doesn't have "_embedded" key
+        # we need to get the full data of every teacher, because who_goes doesn't return full data.
+        for person in ppl:
+            if person.type==Employee:
+                person=person.mutate(People.from_big_mess(search_person(person.name, False, self.token)["_embedded"])[0])  # don't search by id, the api returns 500 error if we do that.
+        return ppl
 
     def schedule(self, person: Person=noone, start_time: date=None, end_time: date=None, overlap: Person=noone) -> Events:
         """
@@ -285,13 +290,14 @@ class Schedule:
             end_time=start_time
         if overlap is None:
             overlap=noone
+        # print involved people
         if overlap!=noone or person!=self.people.current:  # if we overlap or we don't get our own schedule
-            sch=self.get_schedule(person, start_time, end_time, overlap)
-            return sch  # if we overlap, we don't cache it
-        sch=self.search_in_cache(person, start_time, end_time)
-        if sch.nocache: # if not nocache then just no events
+            self.last_events=self.get_schedule(person, start_time, end_time, overlap)
+            return self.last_events
+        self.last_events=self.search_in_cache(person, start_time, end_time)
+        if self.last_events.nocache: # if not nocache then just no events
             print("warning: cache miss. This is not recommended. Load cache manually for this function to work faster!")  # don't trigger this warning in production!
-            sch=self.get_schedule(person, start_time, end_time)
-        return sch
+            self.last_events=self.get_schedule(person, start_time, end_time)
+        return self.last_events
 
 auth=modeus_auth # alias for modeus_auth

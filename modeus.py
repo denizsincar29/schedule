@@ -200,7 +200,7 @@ def search_person(term: str, by_id: bool, modeus_token: str) -> dict:
     
         j=response.json()
         if "_embedded" in j: return j
-        else: raise RuntimeError("No key embedded")
+        else: raise RuntimeError(f"No key embedded! {j}")
 
 def who_goes(event_id: str, modeus_token: str) -> dict:
     """

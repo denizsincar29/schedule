@@ -24,6 +24,26 @@ class Person:
     start_date: date|None  # can be omitted in Json for some strange reason.
     end_date: date|None
 
+    def mutate(self, other):
+        """
+        Mutates the person with the other person.
+
+        Parameters:
+        - other (Person): The other person to mutate with.
+        """
+        # student to student... etc
+        self.person_id=other.person_id
+        self.name=other.name
+        self.start_date=other.start_date
+        self.end_date=other.end_date
+        if isinstance(other, Student):
+            self.specialty=other.specialty
+            self.profile=other.profile
+        elif isinstance(other, Employee):
+            self.group=other.group
+
+        # 
+
     #region magic methods
     def __eq__(self, other):
         return self.person_id==other.person_id
@@ -63,6 +83,14 @@ class Student(Person):
     specialty: str
     profile: str
 
+    def __post_init__(self):  # specialty and profile are empty if they are none
+        if self.specialty is None:
+            self.specialty=""
+        if self.profile is None:
+            self.profile=""
+        # no need to check dates, they can be None
+
+
     @property
     def type(self) -> type:
         """Returns the type of the person."""
@@ -74,11 +102,15 @@ class Student(Person):
 
 
     def __str__(self):
-        msg=f"{self.name}: {self.specialty}, {self.profile}."
+        msg=self.name
+        if self.specialty!="":
+            msg+=f", {self.specialty}"
+        if self.profile!="":
+            msg+=f" - {self.profile}"
         if self.start_date is not None:
-            msg+=f" Учится с {self.start_date}"
+            msg+=f". Учится с {self.start_date}"
         if self.end_date is not None:
-            msg+=f" по {self.end_date}"
+            msg+=f" по {self.end_date}."
         return msg
 
     def __repr__(self):
@@ -114,6 +146,10 @@ class Employee(Person):
 
     group: str
 
+    def __post_init__(self):
+        if self.group is None:
+            self.group=""
+
 
     @property
     def type(self) -> type:
@@ -127,11 +163,13 @@ class Employee(Person):
 
     def __str__(self):
         #return f"{self.name}: {self.group}. Работает с {self.start_date} по {self.end_date}"
-        msg=f"{self.name}: {self.group}."
+        msg=self.name
+        if self.group!="":
+            msg+=f" - {self.group}"
         if self.start_date is not None:
-            msg+=f" Работает с {self.start_date}"
+            msg+=f". Работает с {self.start_date}"
         if self.end_date is not None:
-            msg+=f" по {self.end_date}"
+            msg+=f" по {self.end_date}."
         return msg
 
     def __repr__(self):
@@ -263,6 +301,24 @@ class People:
     def json(self) -> str:
         """Returns the people as a JSON string."""
         return json.dumps(self.__list)
+
+    @classmethod
+    def from_who_goes(cls, data):
+        """
+        parses who goes to the event. Data came from the server
+
+        Parameters:
+        - data (list): The data from the server.
+        """
+        # roleId can be STUDENT or TEACHER
+        evts=[]
+        for dat in data:
+            if dat["roleId"]=="STUDENT":
+                evts.append(Student(dat["personId"], dat["fullName"], None, None, dat["specialtyName"], dat["specialtyProfile"]))
+            else:
+                # this strange api doesn't return group name. Instead, the student fields are None. So employee fields are empty strings
+                evts.insert(0, Employee(dat["personId"], dat["fullName"], None, None, ""))  # prepend teacher to start of the list
+        return cls(evts)
 
     @classmethod
     def from_big_mess(cls, data: dict) -> Self:
