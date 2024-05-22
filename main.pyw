@@ -2,10 +2,11 @@
 # WXPython
 import sys
 import os
+from ical_share import GotICalCheck
 from shutil import rmtree
 from cytolk import tolk
 import wx
-from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG
+from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG, ShowQRCode
 from datepicker import DatePicker
 from app_logic import App
 from parsers.people import noone, People
@@ -22,6 +23,7 @@ class MainWindow(wx.Frame):
         self.must_check_auth=(False, False)
         self.itsme=True  # get my schedule. When it is False, it gets friend's schedule
         self.together=False  # get the schedule together with the friend, if False, get only the friend's schedule
+        self.qrdialog=None
         #region GUI
         self.panel = wx.Panel(self, -1)
         self.hint = wx.StaticText(self.panel, label="Примечание. Вы можете выделить дату начала и конца, чтобы получить расписание на этот диапазон.", size=(200, 50))
@@ -56,8 +58,8 @@ class MainWindow(wx.Frame):
         # create a menubar
         menubar = wx.MenuBar()
         filemenu = wx.Menu()
-        # save to txt
         filemenu.Append(wx.ID_SAVE, "Сохранить в файл\tCTRL+S", "Сохранить расписание в файл")
+        filemenu.Append(wx.ID_FILE3, "Экспорт в календарь", "Экспортировать расписание в календарь на телефоне")
         filemenu.Append(wx.ID_FILE1, "Информация о паре\tCTRL+G", "Показать, кто идёт на эту пару")
         filemenu.AppendCheckItem(wx.ID_ADD, "Чюжое расписание", "Добавить друга для просмотра его расписания")
         filemenu.AppendCheckItem(wx.ID_FILE2, "Просмотреть пересечение расписаний", "Просмотреть общие пары с другом")
@@ -68,11 +70,12 @@ class MainWindow(wx.Frame):
         menubar.Append(filemenu, "Файл")
         menubar.Append(helpmenu, "Помощь")
         self.Bind(wx.EVT_MENU, self.OnSaveToTxt, id=wx.ID_SAVE)
+        
         self.Bind(wx.EVT_MENU, self.who_goes, id=wx.ID_FILE1)
         self.Bind(wx.EVT_MENU, self.on_friend, id=wx.ID_ADD)
         self.Bind(wx.EVT_MENU, self.on_clear_cache, id=wx.ID_DELETE)
         self.Bind(wx.EVT_MENU, self.on_together, id=wx.ID_FILE2)
-
+        self.Bind(wx.EVT_MENU, self.on_ical, id=wx.ID_FILE3)
         self.Bind(wx.EVT_MENU, self.exit, id=wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
         # shortcuts
@@ -83,6 +86,22 @@ class MainWindow(wx.Frame):
         ])
         self.SetAcceleratorTable(accel_tbl)
         self.SetMenuBar(menubar)
+
+    def on_ical(self, event):
+        def stop_cb():
+            if self.app.autoclose is not None and self.app.autoclose.is_alive():
+                self.app.autoclose.q.put(True)
+        def ical_cb(status, ical):
+            if not status:
+                self.show_error(f"Ошибка при загрузке календаря на сервер: {ical}")
+                return
+            self.qrdialog=ShowQRCode(self, "QR-код для добавления в календарь", ical, stop_cb)
+            self.qrdialog.Show()
+        def close_cb():
+            if self.qrdialog is not None:
+                self.qrdialog.Close()
+                self.qrdialog=None
+        self.app.send_command(["ical", close_cb], ical_cb)
 
     def on_clear_cache(self, event):
         rmtree("cache", ignore_errors=True)  # remove the cache folder

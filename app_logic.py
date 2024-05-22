@@ -22,11 +22,13 @@ from queue import Queue
 from random import choice
 from wx import CallAfter as wxrun  # fully rewriting the thread not to use queues.
 from win11toast import notify
+from ical_share import upload_ical, get_ical, GotICalCheck
 import os
 import dotenv # move dotenv check here
-from sys import exit  # pyinstaller can't find it in some cases
+
 
 dotdotdot=... # for the match statement
+
 
 def randomsound():
     greatsounds=["Alarm4", "Alarm6", "Alarm10"]
@@ -39,6 +41,7 @@ class App(Thread):
         self.forward = Queue()
         self.schedule = None  # don't use this if not authed. Else you'll get angry customers chasing you with pitchforks.
         self.on_auth=on_auth  # function to run after the user has been authenticated
+        self.autoclose=None  # if we have a GotICalCheck thread, we need to keep it here
         self.daemon = True  # we don't want to keep the program running after the main thread exits
         self.start()
 
@@ -59,7 +62,6 @@ class App(Thread):
                     c_person=self.schedule.people.current if itsme else self.schedule.people.friend
                     t_person=self.schedule.people.current if not itsme and together else noone  # if we are together, we need to pass the friend. Otherwise, we pass noone
                     wxrun(cb, self.schedule.schedule(c_person, command[1], command[2], t_person).humanize())
-
                 case "fullname":
                     wxrun(cb, self.schedule.search_person(command[1], False), command[2])
                 case "saveperson":
@@ -71,6 +73,11 @@ class App(Thread):
                         notify("Расписание изменилось!", diffs.human_diff(), audio=randomsound())
                 case "check_credentials":
                     self.check_credentials(command[1], command[2], command[3])
+                case "ical":
+                    ical=self.schedule.last_events.ics()
+                    status, message, filename=upload_ical(ical)
+                    self.autoclose=GotICalCheck(filename, command[1])
+                    wxrun(cb, status, message)
                 case "who_goes": # command takes cursor position of an event and returns who goes there
                     evt=self.schedule.last_events.get_event_by_strindex(command[1])
                     if evt is None:
@@ -84,6 +91,8 @@ class App(Thread):
                 case _:
                     print(("Unknown", "command"))
             self.forward.task_done()
+
+
 
     def check_credentials(self, email, password, direct_pass=False):
         authed=direct_pass  # if we loaded the credentials from the environment, we don't need to check them

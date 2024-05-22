@@ -1,4 +1,4 @@
-from datetime import date, time, datetime
+from datetime import date, time, datetime, timedelta
 from pytz import timezone
 from .russian_date import russian_date
 from dataclasses import dataclass, field
@@ -6,8 +6,14 @@ from copy import deepcopy
 from typing import Self
 from . import mess, people
 import json
+import icalendar
 
 STUDIES = [time(8, 20), time(10, 10), time(12, 0), time(14, 30), time(16, 15), time(18, 0), time(19, 40)]
+
+def study_to_number(study_time: time) -> int:
+    """Converts the study time to the number of the event."""
+    return STUDIES.index(study_time)+1 if study_time in STUDIES else -1
+
 moscow=timezone("Europe/Moscow")
 
 def combine_moscow(date, time):  # i am from russia, we are lazy to write this every time xD!
@@ -56,7 +62,8 @@ class Event:
         return self.event_id!=other.event_id
 
     def __str__(self):  # human readable in russian
-        return f"Пара {self.event_num}: с {self.event_start:%H:%M} до {self.event_end:%H:%M}. {self.format}, {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}."
+        event_num_str=f"Пара {self.event_num}" if self.event_num>0 else "Событие"
+        return f"{event_num_str}: с {self.event_start:%H:%M} до {self.event_end:%H:%M}. {self.format}, {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}."
 
     def __repr__(self):  # for debugging
         return f"Event {self.event_num}: {self.event_name}. Teacher: {self.teacher}. Room: {self.room_name}. Address: {self.address}. Status: {self.status}, Diff: {self.diff}, Changed: {self.changed}"
@@ -324,6 +331,45 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         return [event.__dict__() for event in self.events]
     #endregion
 
+    def ics(self) -> str:
+        """Returns the events as an iCalendar string."""
+        cal=icalendar.Calendar()
+        cal.add('prodid', '-//NARFUSchedule//deniz.r1oaz.ru//')
+        cal.add('version', '2.0')
+        prev_date=date(2020, 1, 1)  # for making alarm yesterday with the whole day
+        for event in self.events:
+            if event.event_date!=prev_date:
+                prev_date=event.event_date
+                day_event=icalendar.Event()
+                day_event.add('uid', f"{event.event_date}-day")
+                whole_day_schedule = self.get_events_by_date(event.event_date).humanize()  # get the whole day schedule
+                day_event.add('summary', f"Расписание на {russian_date(event.event_date)}")
+                day_event.add('description', whole_day_schedule)
+                day_event.add('dtstart', combine_moscow(event.event_date, time(8, 20)))
+                day_event.add('dtend', combine_moscow(event.event_date, time(21, 0)))
+                day_event.add('dtstamp', moscow.localize(datetime.now()))
+                day_alarm=icalendar.Alarm()
+                day_alarm.add('action', 'display')
+                day_alarm.add('description', f'Расписание на завтра:\n{whole_day_schedule}')
+                day_alarm.add('trigger', timedelta(hours=-14, minutes=-20))  # yesterday at 18:00
+                day_event.add_component(day_alarm)
+                cal.add_component(day_event)
+            ical_event=icalendar.Event()
+            ical_event.add('uid', event.event_id)
+            ical_event.add('summary', f"{event.format}, {event.event_name}")
+            ical_event.add('dtstart', event.start_datetime)
+            ical_event.add('dtend', event.end_datetime)
+            ical_event.add('location', f"{event.room_name}, {event.address}")
+            ical_event.add('description', f"Преподаватель: {event.teacher}.")
+            ical_event.add('dtstamp', moscow.localize(datetime.now()))
+            alarm=icalendar.Alarm()
+            alarm.add('action', 'display')
+            alarm.add('description', 'Скоро начнется пара! Подготовьтесь!')
+            alarm.add('trigger', timedelta(minutes=-15))
+            ical_event.add_component(alarm)
+            cal.add_component(ical_event)
+        return cal.to_ical().decode("utf-8")
+
     def tokenize(self) -> list[tuple[Event, int]]:
         """returns the indices where each event starts in the human-readable string."""
         # copy paste from __str__ method
@@ -390,7 +436,8 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
             event_start = datetime.fromisoformat(event['start']).time()
             event_end = datetime.fromisoformat(event['end']).time()
             event_date = datetime.fromisoformat(event['start']).date()
-            event_num = STUDIES.index(event_start) + 1
+            event_num = study_to_number(event_start)
+
             event_status = event['holdingStatus']['name']
             room_name, address = mess.get_room(event_id, data)
             teacher = mess.get_teacher(event_id, data)

@@ -2,3 +2,5 @@ python-dateutil
 pydotdict
 httpx
 packaging
+icalendar
+qrcode

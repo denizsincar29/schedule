@@ -5,6 +5,9 @@ news.old.txt
 *.7z
 schedule.txt
 *.log
+# phps are closed source
+*.php
+icals/
 cache/
 output/
 .env

@@ -178,6 +178,8 @@ def search_person(term: str, by_id: bool, modeus_token: str) -> dict:
     Raises:
     RuntimeError: if can't find key embedded.
     """
+    if by_id:
+        raise NotImplementedError("Search by id is not implemented yet")  # its bugging!
     mode="id" if by_id else "fullName"
     request_json = {
         "size": 10,

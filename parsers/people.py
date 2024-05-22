@@ -181,8 +181,8 @@ class Employee(Person):
             "name": self.name,
             "type": "employee",
             "group": self.group,
-            "start_date": self.start_date.isoformat(),
-            "end_date": self.end_date.isoformat()
+            "start_date": self.start_date.isoformat() if self.start_date is not None else None,
+            "end_date": self.end_date.isoformat() if self.end_date is not None else None
         }
 
     def json(self) -> str:

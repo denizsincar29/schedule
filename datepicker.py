@@ -73,7 +73,7 @@ class DatePicker(wx.TreeCtrl):
             item, cookie = self.GetNextChild(month_item, cookie)
         return None
 
-    def get_selected_date(self):
+    def get_selected_date_old(self):  # old version.
         items = self.GetSelections()
         dates=[]
         for item in items:  # if no item, it will pass
@@ -86,6 +86,25 @@ class DatePicker(wx.TreeCtrl):
                 dates.append(date(year, month, day))
         return dates
 
+    # new version. If month is selected instead of day, it will return first and last day of the month.
+    def get_selected_date(self):
+        items = self.GetSelections()
+        dates=[]
+        for item in items:  # if no item, it will pass
+            if item is None:
+                continue
+            if item.IsOk():
+                if not self.ItemHasChildren(item):
+                    day = int(self.GetItemText(item))
+                    month = months.index(self.GetItemText(self.GetItemParent(item))) + 1
+                    year = int(self.GetItemText(self.GetItemParent(self.GetItemParent(item))))
+                    dates.append(date(year, month, day))
+                elif self.ItemHasChildren(item) and not self.ItemHasChildren(self.GetFirstChild(item)[0]): # if month is selected
+                    month = months.index(self.GetItemText(item)) + 1
+                    year = int(self.GetItemText(self.GetItemParent(item)))
+                    dates.append(date(year, month, 1))
+                    dates.append(date(year, month, 28 if isleap(year) else 29))
+        return dates
 
     def OnDateChanged(self, event):
         self.dt_callback(self.get_selected_date())
