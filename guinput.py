@@ -190,7 +190,7 @@ class ShowQRCode(wx.Dialog):
         qr_bitmap = wx.Bitmap(qr_image)
         # Display QR code
         qr = wx.StaticBitmap(panel, bitmap=qr_bitmap)
-        vbox.Add(qr, flag=wx.ALIGN_CENTER|wx.ALL, border=20)
+        vbox.Add(qr, flag=wx.ALIGN_CENTER|wx.ALL, border=10)
         # Close button
         okButton = wx.Button(panel, label='Закрыть', id=wx.ID_OK)
         okButton.Bind(wx.EVT_BUTTON, self.on_close_button)  # if closed automatically, the callback will not be called
@@ -200,7 +200,7 @@ class ShowQRCode(wx.Dialog):
     def generate_qr_code(self, text):
         qr = qrcode.QRCode(
             version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
             box_size=10,
             border=4,
         )
