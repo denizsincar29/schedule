@@ -35,17 +35,3 @@ etc.
 Use this program as you like, but do not forget to mention the author. I'm not responsible if you are banned from modeus if you flood their servers with requests. Use the program wisely.
 # contacts
 If you have any questions, suggestions or found a bug, write to @denizsincar29 on telegram or deniz@r1oaz.ru.
-# changelog
-## 1.0:
-- 75% of the code was rewritten. the most part of the code was hard to use in the future, navigation was difficult, and the code was not very readable.
-The human-parser was rewritten to use intermediate beautiful jsons. Parsing from server output, a huge json directly to human-readable format was a terrible idea.
-- Completely rewritten the cache system. Now the cache is stored in jsons, which can be easily read and deleted. The cache is stored in the cache folder.
-- completed the overlap of schedules with another person. Now you can see the intersection of your schedule with another person.
-- added the ability to search for a person by name. Now you can find the schedule of another person - a fellow student, teacher, etc. without changing the profile. Your main profile (your name and id) is saved in people.json.
-Therefore, I added the ability to change the profile, and temperarily switch to another person's schedule without changing the main profile.
-- Now schedule is cached in the cache folder. The cache is stored in jsons, which can be easily read and deleted. The full month schedule is cached, but in case it changes, the cache is updated at the start of the program. (to be added)
-- Over all,  there are many changes here and there.
-## 0.0 private alpha:
-- Initial release.  
-The change log was not kepped, but the program had nearly the same functionality. The code was not very readable, and the cache was stored in txt files.
-
