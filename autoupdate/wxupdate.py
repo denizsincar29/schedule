@@ -121,7 +121,10 @@ class Updater(Thread):
         return not self.is_alive()
 
     def run(self):
-        status, version=check_update()
+        try:
+            status, version=check_update()
+        except Exception as e:
+            return  # we dont wanna crash the program, do we?
         wx.CallAfter(self.on_update, status, version)
         if status:  # has update
             if self.queue.get():  # we wanna update! go ahead!
