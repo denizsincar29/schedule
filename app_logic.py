@@ -36,11 +36,12 @@ def randomsound():
 
 
 class App(Thread):
-    def __init__(self, on_auth=None):
+    def __init__(self, on_auth=lambda: None, on_error=lambda: None):
         Thread.__init__(self)
         self.forward = Queue()
         self.schedule = None  # don't use this if not authed. Else you'll get angry customers chasing you with pitchforks.
         self.on_auth=on_auth  # function to run after the user has been authenticated
+        self.on_error=on_error  # function to run after an error has occured
         self.autoclose=None  # if we have a GotICalCheck thread, we need to keep it here
         self.daemon = True  # we don't want to keep the program running after the main thread exits
         self.start()
@@ -95,21 +96,22 @@ class App(Thread):
 
 
     def check_credentials(self, email, password, direct_pass=False):
+        errmsg="Неверный логин или пароль" # default error message
         authed=direct_pass  # if we loaded the credentials from the environment, we don't need to check them
         if not email or not password:
             authed=... # we don't have the credentials
         if not direct_pass and auth!=...:
-            authed=auth(email, password)
+            authed, errmsg=auth(email, password)  #replace the default error message with the one from the server. If authed true, error message is empty and ignored
         if authed==True:  #noq: F632
             if not direct_pass:
                 os.environ["MODEUS_EMAIL"]=email
                 os.environ["MODEUS_PASSWORD"]=password
                 with open(".env", "w") as f:
                     f.write(f"MODEUS_EMAIL={email}\nMODEUS_PASSWORD={password}\n")
-            self.schedule=Schedule(email, password)
+            self.schedule=Schedule(email, password, self.on_error)
             self.schedule.load_people()
         if self.on_auth:
-            wxrun(self.on_auth, authed)  # run the function in the main thread
+            wxrun(self.on_auth, authed, errmsg)
 
     def send_command(self, command, on_finish=None):
         self.forward.put((command, on_finish))

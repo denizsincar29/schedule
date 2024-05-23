@@ -16,11 +16,11 @@ from autoupdate.wxupdate import Updater, VERSION, restart, YouWannaUpdateDialog,
 class MainWindow(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, parent=None, title=f"Расписание САФУ ({VERSION})", size=(800, 600), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
-        self.app=App(self.check_auth_cb)
+        self.app=App(self.check_auth_cb, self.on_error)
         self.updater=Updater(self.on_update, self.on_total, self.on_progress, self.on_restart, self.on_no_update)
         self.progress=None  # to not get attribute error
         self.authed=False
-        self.must_check_auth=(False, False)
+        self.must_check_auth=(False, False, "")  # if we need to check auth after updating
         self.itsme=True  # get my schedule. When it is False, it gets friend's schedule
         self.together=False  # get the schedule together with the friend, if False, get only the friend's schedule
         self.qrdialog=None
@@ -150,7 +150,7 @@ class MainWindow(wx.Frame):
             self.app.send_command(["toast", "Новость!", n, "ms-winsoundevent:Notification.Looping.Call10"])  # call10 is the best sound
             PopUpMSG(self, "Новость!", n).ShowModal()
         if self.must_check_auth[0]:  # we scheduled check_auth_cb while updating
-            self.check_auth_cb(self.must_check_auth[1])
+            self.check_auth_cb(self.must_check_auth[1], self.must_check_auth[2])
 
 
     def on_total(self, total):
@@ -216,11 +216,11 @@ class MainWindow(wx.Frame):
         self.app.send_command(["schedule", start_date, end_date, self.itsme, self.together], schedcb)
         # that's all. This function ends here. The schedule will be displayed in the control when the app thread finishes the command.
 
-    def check_auth_cb(self, state):
+    def check_auth_cb(self, state, msg):
         if self.progress:  # dont do anything if progress dialog is open. We dont want to show any dialogs while updating
             return
         if not self.updater.dead:
-            self.must_check_auth=(True, state)  # here we end.
+            self.must_check_auth=(True, state, msg)  # here we end.
             return
         if state==True:  #noqa
             #we ask for name
@@ -232,8 +232,11 @@ class MainWindow(wx.Frame):
                 self.schedule(self.date_picker.get_selected_date(), True)
         elif state==... or state==False:  #noqa
             if state==False:  #noqa
-                self.show_error("Неверный email или пароль.")
+                self.show_error(msg, not ("email" in msg))  # if email is in the message, we can ask for email and password again. Otherwise, exit
             self.ask_emailnpassword()
+
+    def on_error(self, msg):
+        wx.CallAfter(self.show_error, f"Модеус глючит: {msg}", True)  # show the error message in the main thread regardless of the thread it is called from
 
     def search_cb(self, results, itsme=True):
         result=self.choose_from_results(results)

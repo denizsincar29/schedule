@@ -49,15 +49,16 @@ class Config(DotDict):
 
 class Schedule:
     """The main class for abstracting the modeus api"""
-    def __init__(self, email: str, password: str) -> None:
+    def __init__(self, email: str, password: str, on_error=lambda: None) -> None:
         """
         Initialize the Schedule object with email and password. It will check the token and load it if it's not expired.
 
         Parameters:
         email (str): Email for modeus
         password (str): Password for modeus
+        on_error (function): Function to call if token is not valid. Default is a nothing-doing function.
         """
-        self.email=email
+        self.email=email if "@edu.narfu.ru" in email else email+"@edu.narfu.ru"
         self.password=password
         self.token=...
         self.expire=datetime.now()-timedelta(seconds=10)
@@ -68,7 +69,7 @@ class Schedule:
         self.config=Config()
         if not os.path.exists("cache"):
             os.mkdir("cache")
-        self.check_token()
+        self.check_token(on_error)
 
 
     def save_token(self):
@@ -88,13 +89,17 @@ class Schedule:
             self.token=self.config.api.token
 
 
-    def check_token(self):
+    def check_token(self, on_error=lambda: None):
         """Check if token is expired or not loaded. If it's expired or not loaded, get a new token. This function is automatically called, but it is a good practice to call it every 12 hours if you're developing a long running server script."""
         if self.token==...:  # first run
             self.load_token()
         if datetime.now()>self.expire or self.token is None:  # token expired or not loaded
-            print("Получение токена. Пожалуйста, подождите...")
-            self.token=modeus_parse_token(self.email, self.password)            
+            try:
+                self.token=modeus_parse_token(self.email, self.password)
+            except Exception as e:
+                self.token=None
+                on_error(str(e))
+                return
             self.expire=datetime.now()+timedelta(hours=12)  # modeus token lives for 12 hours and dies!
             self.save_token()
 
@@ -233,6 +238,9 @@ class Schedule:
         self.results=self.search_person_from_cache(term, by_id)
         if len(self.results)==0:
             self.results=People.from_big_mess(search_person(term, by_id, self.token)["_embedded"])
+            # if we searched with russian letter yo, we should search with ye if we don't find anything.
+            if len(self.results)==0 and "ё" in term:
+                self.results=People.from_big_mess(search_person(term.replace("ё", "е"), by_id, self.token)["_embedded"])
         return self.results
 
 
@@ -300,4 +308,12 @@ class Schedule:
             self.last_events=self.get_schedule(person, start_time, end_time)
         return self.last_events
 
-auth=modeus_auth # alias for modeus_auth
+#auth=modeus_auth # alias for modeus_auth
+
+def auth(email, password):
+    if "@edu.narfu.ru" not in email:  # allow to use the first part of the email
+        email+="@edu.narfu.ru"
+    try:
+        return (modeus_auth(email, password), "")  # empty string means no error and either success or unsuccess confirmed by server.
+    except Exception as e:
+        return (False, str(e))  # if not empty, then it's an error message.

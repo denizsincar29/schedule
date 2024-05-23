@@ -403,7 +403,7 @@ class People:
         Returns:
         - People: The people with the name.
         """
-        return People([person for person in self.people if name.lower() in person.name.lower()])
+        return People([person for person in self.people if name.lower() in person.name.lower() or name.lower().replace("ё", "е") in person.name.lower() or name.lower.replace("е", "ё") in person.name.lower()])  # russian letter yo can be written as e and vice versa
 
     def get_students(self) -> Self:
         """Returns the students."""
