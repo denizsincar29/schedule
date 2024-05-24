@@ -19,6 +19,7 @@ class MainWindow(wx.Frame):
         self.app=App(self.check_auth_cb, self.on_error)
         self.updater=Updater(self.on_update, self.on_total, self.on_progress, self.on_restart, self.on_no_update)
         self.progress=None  # to not get attribute error
+        self.offline=False
         self.authed=False
         self.must_check_auth=(False, False, "")  # if we need to check auth after updating
         self.itsme=True  # get my schedule. When it is False, it gets friend's schedule
@@ -88,6 +89,9 @@ class MainWindow(wx.Frame):
         self.SetMenuBar(menubar)
 
     def on_ical(self, event):
+        if self.offline:
+            self.show_error("Нет подключения к интернету. Невозможно экспортировать календарь.")
+            return
         def stop_cb():
             if self.app.autoclose is not None and self.app.autoclose.is_alive():
                 self.app.autoclose.q.put(True)
@@ -236,7 +240,9 @@ class MainWindow(wx.Frame):
             self.ask_emailnpassword()
 
     def on_error(self, msg):
-        wx.CallAfter(self.show_error, f"Модеус глючит: {msg}", True)  # show the error message in the main thread regardless of the thread it is called from
+        self.offline=True
+        if msg!="":  # if msg is empty, it is not an error, but just we are offline
+            wx.CallAfter(self.show_error, f"Модеус глючит: {msg}", False)
 
     def search_cb(self, results, itsme=True):
         result=self.choose_from_results(results)
@@ -251,6 +257,10 @@ class MainWindow(wx.Frame):
         self.schedule(self.date_picker.get_selected_date(), True)
 
     def schedule_cb(self, schedule, toast=False):
+        if "Пара" not in schedule and self.offline:
+            self.control.SetValue("Нет подключения к интернету или модеус умер. Попробуйте позже.")
+            self.status("Нет подключения к интернету или модеус умер. Попробуйте позже.", toast)
+            return
         self.control.SetValue(schedule)
         self.status("Расписание получено.", toast)  # if toast is True, it will be spoken
         if toast:
@@ -261,10 +271,15 @@ class MainWindow(wx.Frame):
                 title=f"Расписание САФУ - {self.app.schedule.people.current.name} и {self.app.schedule.people.friend.name}"
             else:  # only my schedule. Dont give a hell about together
                 title=f"Расписание САФУ - {self.app.schedule.people.current.name}"
+            if self.offline:
+                title+=" (оффлайн)"
             self.SetTitle(title)
             self.app.send_command(["toast", "Расписание САФУ", schedule])
 
     def who_goes(self, event):  # before it was who_goes, but now it shows the event info
+        if self.offline:
+            self.show_error("Нет подключения к интернету. Невозможно получить информацию о паре.")
+            return
         # an event starts with the word "Пара" and ends with the next "Пара" or the end of the text. Return the event text
         cursor=self.control.GetInsertionPoint()
         #who_goes_cb=lambda result, evt: PopUpMSG(self, "Информация о паре", f"{evt}\n\nКто записан на пару:\n{result}").ShowModal()
@@ -280,6 +295,10 @@ class MainWindow(wx.Frame):
 
 
     def ask_emailnpassword(self):
+        if self.offline:
+            # we can't check the credentials without internet, show the error and exit
+            self.show_error("Нет подключения к интернету. Невозможно проверить логин и пароль.", True)
+            return # in case.
         with AuthInput(self, "Введите email и пароль от модеуса") as authinput:
             status=authinput.ShowModal() == wx.ID_OK
             if status:
@@ -302,10 +321,18 @@ class MainWindow(wx.Frame):
     def choose_from_results(self, results):
         # results is a list of person dicts with name and other info. Return the person index
         if len(results)==0:
+            if self.offline:
+                self.show_error("Нет подключения к интернету. Невозможно получить результаты поиска.", self.itsme)  # if itsme, exit. Otherwise, disable friend mode
+                if not self.itsme:  #uncheck all friend related items
+                    self.GetMenuBar().Check(wx.ID_ADD, False)
+                    self.GetMenuBar().Check(wx.ID_FILE2, False)
+                    self.itsme=True
+                    self.together=False
+                return -1
             self.show_error("Ничего не найдено.")
             return -1
         elif len(results)==1:
-            return 0
+            return 0  # incase we get cache if offline
         people=[]
         for person in results:
             people.append(str(person))

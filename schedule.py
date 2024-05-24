@@ -62,6 +62,7 @@ class Schedule:
         self.password=password
         self.token=...
         self.expire=datetime.now()-timedelta(seconds=10)
+        self.no_internet=False  # to notify the user that this app is working offline. Search results will be empty, non-cached schedule will be empty, etc.
         self.results=People()
         self.people=People()  # self.current_person is now self.people.current and friend is self.people.friend
         self.last_events=Events()
@@ -98,6 +99,7 @@ class Schedule:
                 self.token=modeus_parse_token(self.email, self.password)
             except Exception as e:
                 self.token=None
+                self.no_internet=True  # not really no internet, but the server is down or something.
                 on_error(str(e))
                 return
             self.expire=datetime.now()+timedelta(hours=12)  # modeus token lives for 12 hours and dies!
@@ -139,7 +141,7 @@ class Schedule:
         """
         if person==noone:
             person=self.people.current
-        if person==noone:  # check again if it's still noone
+        if person==noone or self.no_internet: # if we don't have internet, we can't get schedule.
             return Events([])
         self.check_token()
         if start_time is None:
@@ -150,11 +152,15 @@ class Schedule:
             end_time=start_time+timedelta(days=1, seconds=-1)  # end of the day
         else:
             end_time=moscow.localize(datetime.combine(end_time, datetime.min.time()))+timedelta(days=1, seconds=-1)
-        g=Events.from_big_mess(get_schedule(person.person_id, self.token, start_time, end_time))
-        if overlap!=noone:
-            h=Events.from_big_mess(get_schedule(overlap.person_id, self.token, start_time, end_time))
-            return g.overlap(h)
-        return g
+        try:
+            g=Events.from_big_mess(get_schedule(person.person_id, self.token, start_time, end_time))
+            if overlap!=noone:
+                h=Events.from_big_mess(get_schedule(overlap.person_id, self.token, start_time, end_time))
+                return g.overlap(h)
+            return g
+        except:
+            self.no_internet=True
+            return Events([])
 
 
     def get_month(self, month: int, person: Person=noone) -> Events:
@@ -176,6 +182,8 @@ class Schedule:
             start_time=start_time.replace(month=month)
         end_time = start_time + relativedelta(months=1) - timedelta(seconds=1)  # i hope we don't have university events in 23:59 lol
         sched=self.get_schedule(person, start_time, end_time)
+        if self.no_internet:  # we dont cache if we don't have internet
+            return Events([])
         diff=sched.to_cache(month, person.person_id)
         return diff  # if there is no diff, it will return empty Events object
 
@@ -237,10 +245,17 @@ class Schedule:
         self.check_token()
         self.results=self.search_person_from_cache(term, by_id)
         if len(self.results)==0:
-            self.results=People.from_big_mess(search_person(term, by_id, self.token)["_embedded"])
-            # if we searched with russian letter yo, we should search with ye if we don't find anything.
-            if len(self.results)==0 and "ё" in term:
-                self.results=People.from_big_mess(search_person(term.replace("ё", "е"), by_id, self.token)["_embedded"])
+            if self.no_internet:  # if we don't have internet, we can't search.
+                self.results=People()
+                return self.results
+            try:
+                self.results=People.from_big_mess(search_person(term, by_id, self.token)["_embedded"])
+                # if we searched with russian letter yo, we should search with ye if we don't find anything.
+                if len(self.results)==0 and "ё" in term:
+                    self.results=People.from_big_mess(search_person(term.replace("ё", "е"), by_id, self.token)["_embedded"])
+            except:
+                self.no_internet=True
+                self.results=People()
         return self.results
 
 
@@ -272,7 +287,13 @@ class Schedule:
         People: List of people who goes to the event.
         """
         self.check_token()
-        ppl=People.from_who_goes(who_goes(event.event_id, self.token))  # this data doesn't have "_embedded" key
+        if self.no_internet:
+            return People()
+        try:
+            ppl=People.from_who_goes(who_goes(event.event_id, self.token))  # this data doesn't have "_embedded" key
+        except:
+            self.no_internet=True
+            return People()
         # we need to get the full data of every teacher, because who_goes doesn't return full data.
         for person in ppl:
             if person.type==Employee:
@@ -316,4 +337,4 @@ def auth(email, password):
     try:
         return (modeus_auth(email, password), "")  # empty string means no error and either success or unsuccess confirmed by server.
     except Exception as e:
-        return (False, str(e))  # if not empty, then it's an error message.
+        return (True, str(e))  # if not empty, then it's an error message.

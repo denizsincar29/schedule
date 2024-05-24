@@ -2,6 +2,8 @@ import httpx
 import re
 from datetime import datetime
 from pytz import UTC
+from functools import lru_cache, partial
+import time
 
 def modeus_parse_token(email: str, password: str) -> str:
     """
@@ -232,4 +234,38 @@ def who_goes(event_id: str, modeus_token: str) -> dict:
     
         j=response.json()
         return j
+class TimeCache:
+    def __init__(self, seconds=5):
+        self.ttl = 0
+        self.seconds = seconds
+        self.cache = {}
+
+    @property
+    def expired(self):
+        """Return the same value withing `seconds` time period"""
+        ttl=round(time.time() / self.seconds)
+        if ttl != self.ttl:
+            self.ttl = ttl
+            self.cache = {}
+            return True
+        return False  # not expired
+
+    def __call__(self, func):
+        def wrapper(*args, **kwargs):
+            key = (args, frozenset(kwargs.items()))
+            if not self.expired and key in self.cache:
+                return self.cache[key][1]
+            result = func(*args, **kwargs)
+            self.cache[key] = (self.ttl, result)
+            return result
+        return wrapper
+
+# a function that returns if there is internet connection. It caches for 5 seconds
+@TimeCache(5)
+def is_connected():
+    try:
+        httpx.get("https://google.com", timeout=5)
+        return True
+    except:
+        return False
 

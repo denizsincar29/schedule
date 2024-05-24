@@ -42,6 +42,7 @@ class App(Thread):
         self.schedule = None  # don't use this if not authed. Else you'll get angry customers chasing you with pitchforks.
         self.on_auth=on_auth  # function to run after the user has been authenticated
         self.on_error=on_error  # function to run after an error has occured
+        self.confirmed_offline=False  # if we have confirmed that we are in offline mode, we will not call the on_error function again
         self.autoclose=None  # if we have a GotICalCheck thread, we need to keep it here
         self.daemon = True  # we don't want to keep the program running after the main thread exits
         self.start()
@@ -51,7 +52,13 @@ class App(Thread):
         email=os.environ.get("MODEUS_EMAIL", "")
         password=os.environ.get("MODEUS_PASSWORD", "")
         self.check_credentials(email, password, True)
+        if self.schedule is not None and self.schedule.no_internet and not self.confirmed_offline:
+            wxrun(self.on_error, "Нет интернета или модеус глючит. Программа будет работать в оффлайн режиме, то есть будет показывать только данные из кеша.")
+            self.confirmed_offline=True
         while True:
+            if self.schedule is not None and self.schedule.no_internet and not self.confirmed_offline:
+                wxrun(self.on_error, "")  # without a message to trigger the gui offline boolean change
+                self.confirmed_offline=True
             command, cb = self.forward.get()  # cb is a callback function to run after the command is executed
             if cb is None:
                 cb=lambda *args, **kwargs: None
@@ -101,7 +108,7 @@ class App(Thread):
         if not email or not password:
             authed=... # we don't have the credentials
         if not direct_pass and auth!=...:
-            authed, errmsg=auth(email, password)  #replace the default error message with the one from the server. If authed true, error message is empty and ignored
+            authed, errmsg=auth(email, password)  #replace the default error message with the one from the server
         if authed==True:  #noq: F632
             if not direct_pass:
                 os.environ["MODEUS_EMAIL"]=email
