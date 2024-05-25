@@ -1,14 +1,13 @@
 from schedule import Schedule, noone
 from datetime import datetime, date, time
 from pytz import timezone
-from autoupdate.update import console_update, ver
+from autoupdate.update import console_update, ver, VERSION
 import os
 import dotenv
 from sys import exit  # pyinstaller can't find it in some cases
 
 from inputval import inputwhile, input_int, inputwhile_ctrlc, ContinueLoop
 import re
-VERSION=ver("1.0.0-beta4")
 # to string it, use str(VERSION)
 # compile regex for date with possible omitting of month or year
 regex=re.compile(r"^((?:\d{1,2}))(?:/((?:\d{1,2}))(?:/((?:\d{4}|\d{2})))?)?(?: +((?:together)))?$")

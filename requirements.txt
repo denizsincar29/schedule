@@ -1,6 +1,8 @@
 python-dateutil
+pytz
 pydotdict
 httpx
 packaging
 icalendar
 qrcode
+pillow
