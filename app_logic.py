@@ -62,14 +62,14 @@ class App(Thread):
             command, cb = self.forward.get()  # cb is a callback function to run after the command is executed
             if cb is None:
                 cb=lambda *args, **kwargs: None
-            command.extend([None]*(5-len(command)))
+            command.extend([None]*(6-len(command)))
             match command[0]:
                 case "schedule":
                     itsme=command[3] if command[3] is not None else True
                     together=command[4] if command[4] is not None else False
                     c_person=self.schedule.people.current if itsme else self.schedule.people.friend
                     t_person=self.schedule.people.current if not itsme and together else noone  # if we are together, we need to pass the friend. Otherwise, we pass noone
-                    wxrun(cb, self.schedule.schedule(c_person, command[1], command[2], t_person).humanize())
+                    wxrun(cb, self.schedule.schedule(c_person, command[1], command[2], t_person).humanize(False))
                 case "fullname":
                     wxrun(cb, self.schedule.search_person(command[1], False), command[2])
                 case "saveperson":
@@ -91,7 +91,7 @@ class App(Thread):
                     if evt is None:
                         wxrun(cb, "", "")
                     else:
-                        wxrun(cb, str(self.schedule.who_goes(evt)), str(evt))
+                        wxrun(cb, str(self.schedule.who_goes(evt)), evt.humanize(True))
                 case "toast":
                     notify(command[1], command[2], audio=command[3])  # audio can be None or filename
                 case "exit":

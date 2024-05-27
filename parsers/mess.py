@@ -58,6 +58,9 @@ def get_room(event_id, data):
     rooms = data['rooms']
     for event_location in event_locations:
         if event_location['eventId'] == event_id:
+            # event locations thing has custom location if it's not a room but online event
+            if "customLocation" in event_location and event_location["customLocation"]:  # we check because this strange api can return "customLocation"less event
+                return (event_location["customLocation"], "online")
             if 'event-rooms' not in event_location['_links']:
                 #print("no room")
                 return (None, None)

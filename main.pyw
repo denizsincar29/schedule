@@ -12,6 +12,7 @@ from app_logic import App
 from parsers.people import noone, People
 from news import news
 from autoupdate.wxupdate import Updater, VERSION, restart, YouWannaUpdateDialog, ProgressDlg
+from webbrowser import open as webopen
 
 class MainWindow(wx.Frame):
     def __init__(self):
@@ -30,7 +31,7 @@ class MainWindow(wx.Frame):
         self.hint = wx.StaticText(self.panel, label="Примечание. Вы можете выделить дату начала и конца, чтобы получить расписание на этот диапазон.", size=(200, 50))
         self.date_label = wx.StaticText(self.panel, label="Выберите дату")
         self.date_picker = DatePicker(self.panel, self.schedule)
-        self.control = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(600, 400))
+        self.control = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_AUTO_URL, size=(600, 400))
         self.savetotxtbtn = wx.Button(self.panel, label="Сохранить в файл")
         self.savetotxtbtn.Bind(wx.EVT_BUTTON, self.OnSaveToTxt)
         # layout
@@ -47,6 +48,7 @@ class MainWindow(wx.Frame):
         hsizer.AddStretchSpacer(1)  # add a stretch spacer to make the date picker narrower
         self.panel.SetSizer(hsizer)
         self.Bind(wx.EVT_CLOSE, self.exit)
+        self.Bind(wx.EVT_TEXT_URL, self.on_url_click)
         self.CreateStatusBar()
         self.menubar()
         self.Centre()
@@ -113,6 +115,11 @@ class MainWindow(wx.Frame):
         # msg box and exit.
         wx.MessageBox("Кеш очищен. Перезапустите программу.", "Кеш очищен", wx.OK | wx.ICON_INFORMATION)
         self.exit()
+
+    def on_url_click(self, event):
+        url = self.control.GetRange(event.GetURLStart(), event.GetURLEnd())
+        webopen(url)
+        event.Skip()
 
     def on_friend(self, event):
         self.itsme=not event.IsChecked()  # if checked, it is not me

@@ -62,9 +62,7 @@ class Event:
         return self.event_id!=other.event_id
 
     def __str__(self):  # human readable in russian
-        event_num_str=f"Пара {self.event_num}" if self.event_num>0 else "Событие"
-        return f"{event_num_str}: с {self.event_start:%H:%M} до {self.event_end:%H:%M}. {self.format}, {self.event_name}. Преподаватель {self.teacher}. В аудитории: {self.room_name}. По адресу: {self.address}."
-
+        return self.humanize()  # i will rewrite humanize method to return the string
     def __repr__(self):  # for debugging
         return f"Event {self.event_num}: {self.event_name}. Teacher: {self.teacher}. Room: {self.room_name}. Address: {self.address}. Status: {self.status}, Diff: {self.diff}, Changed: {self.changed}"
 
@@ -238,9 +236,18 @@ class Event:
                     msg+=f"Изменен формат проведения на {self.format}"
         return msg
 
-    def humanize(self) -> str:
-        """Returns the event as a human-readable string."""
-        return str(self)
+    def humanize(self, event_times=True) -> str:
+        """
+        Returns the event as a human-readable string.
+
+        Parameters:
+        - event_times (bool): Whether to include the event times in the string.
+        """
+        event_num_str=f"Пара {self.event_num}" if self.event_num>0 else "Событие"
+        addrmsg=f"В аудитории: {self.room_name}. По адресу: {self.address}." if self.address!="online" else f"Проходит онлайн:\n{self.room_name}"  # room name becomes the link to the online event
+        evtmsg=f"с {self.event_start:%H:%M} до {self.event_end:%H:%M}. " if event_times or self.event_num<=0 else ""  # if it is not a study event, then even if event_times is False, we will show the times because it's not obvious
+        return f"{event_num_str}: {evtmsg}{self.format}, {self.event_name}. Преподаватель {self.teacher}. {addrmsg}."
+
 
     def __contains__(self, item) -> bool:
         return item.lower in str(self).lower()
@@ -273,6 +280,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
     """A collection of events. Supports all list methods and some additional methods for filtering and diffing."""
     def __init__(self, events: list[Event]=[], nocache=False):
         self.events=events
+        self.tokens=[]  # for tokenizing the events
         self.nocache=nocache  # true if we have empty cache, false if we have cache but no events in the specified filtered range
 
     #region magic methods
@@ -292,17 +300,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         del self.events[index]
 
     def __str__(self):  # human readable
-        if len(self.events)==0:
-            return "Пар нет!"
-        msg=""
-        prev_date=date(2020, 1, 1)# to instantly print the first date
-        for event in self.events:
-            if event.event_date!=prev_date:
-                msg+=f"\n{russian_date(event.event_date)}:"
-                prev_date=event.event_date
-            msg+=f"\n{event}"
-        return msg.strip()
-
+        return self.humanize()
     def __repr__(self):  # for debugging
         return f"Events {self.events}"
 
@@ -371,20 +369,10 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         return cal.to_ical().decode("utf-8")
 
     def tokenize(self) -> list[tuple[Event, int]]:
-        """returns the indices where each event starts in the human-readable string."""
-        # copy paste from __str__ method
-        if len(self.events)==0:
-            return []
-        msg=""
-        prev_date=date(2020, 1, 1)# to instantly print the first date
-        tokens=[]
-        for event in self.events:
-            if event.event_date!=prev_date:
-                msg+=f"\n{russian_date(event.event_date)}:"
-                prev_date=event.event_date
-            tokens.append((event, len(msg)))
-            msg+=f"\n{event}"
-        return tokens
+        """Tokenizes the events for highlighting in the text field."""
+        if len(self.tokens)==0:
+            str(self)  # dummy call to fill the tokens
+        return self.tokens
 
     def get_event_by_strindex(self, index: int) -> Event:  # making this for getting event by highliting the event in the text field
         """returns the event by the index of the human-readable string."""
@@ -437,7 +425,6 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
             event_end = datetime.fromisoformat(event['end']).time()
             event_date = datetime.fromisoformat(event['start']).date()
             event_num = study_to_number(event_start)
-
             event_status = event['holdingStatus']['name']
             room_name, address = mess.get_room(event_id, data)
             teacher = mess.get_teacher(event_id, data)
@@ -668,9 +655,26 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
             return self.human_diff()
         return "" # to avoid printing "Изменений нет" million times for each event
 
-    def humanize(self) -> Self:
-        """Returns the events as a human-readable string."""
-        return self.__str__()
+    def humanize(self, event_times: bool=True) -> Self:
+        """
+        Returns the events as a human-readable string.
+
+        Parameters:
+        - event_times (bool): Whether to include the event times in the string.
+        """
+        if len(self.events)==0:
+            self.tokens=[]
+            return "Пар нет!"
+        msg=""
+        prev_date=date(2020, 1, 1)# to instantly print the first date
+        for event in self.events:
+            if event.event_date!=prev_date:
+                msg+=f"\n{russian_date(event.event_date)}:"
+                prev_date=event.event_date
+            self.tokens.append((event, len(msg)))
+            msg+=f"\n{event.humanize(event_times)}"
+        return msg.strip()
+
 
     def humanize_event(self, event_id: str) -> str:
         """
