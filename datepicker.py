@@ -2,6 +2,7 @@
 
 import wx
 from datetime import date
+from dateutil.relativedelta import relativedelta
 from pytz import timezone
 from calendar import isleap
 moscow=timezone("Europe/Moscow")
@@ -73,18 +74,6 @@ class DatePicker(wx.TreeCtrl):
             item, cookie = self.GetNextChild(month_item, cookie)
         return None
 
-    def get_selected_date_old(self):  # old version.
-        items = self.GetSelections()
-        dates=[]
-        for item in items:  # if no item, it will pass
-            if not (item is not None and self.ItemHasChildren(item) == False):
-                continue
-            if item.IsOk():
-                day = int(self.GetItemText(item))
-                month = months.index(self.GetItemText(self.GetItemParent(item))) + 1
-                year = int(self.GetItemText(self.GetItemParent(self.GetItemParent(item))))
-                dates.append(date(year, month, day))
-        return dates
 
     # new version. If month is selected instead of day, it will return first and last day of the month.
     def get_selected_date(self):
@@ -102,8 +91,10 @@ class DatePicker(wx.TreeCtrl):
                 elif self.ItemHasChildren(item) and not self.ItemHasChildren(self.GetFirstChild(item)[0]): # if month is selected
                     month = months.index(self.GetItemText(item)) + 1
                     year = int(self.GetItemText(self.GetItemParent(item)))
-                    dates.append(date(year, month, 1))
-                    dates.append(date(year, month, 28 if isleap(year) else 29))
+                    start_date=date(year, month, 1)
+                    end_date=start_date+relativedelta(months=1)-relativedelta(days=1)
+                    dates.append(start_date)
+                    dates.append(end_date)
         return dates
 
     def OnDateChanged(self, event):
