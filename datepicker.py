@@ -5,7 +5,7 @@ from datetime import date
 from pytz import timezone
 from calendar import isleap
 moscow=timezone("Europe/Moscow")
-months=["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
+months=["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]  # 1-based index
 
 class DatePicker(wx.TreeCtrl):
     def __init__(self, parent, dt_callback, *args, **kwargs):
@@ -14,9 +14,9 @@ class DatePicker(wx.TreeCtrl):
         years = [date.today().year, date.today().year + 1]
         self.current_year = self.AppendItem(self.root, str(years[0]))
         self.next_year = self.AppendItem(self.root, str(years[1]))
-        for i in range(12):
-            month = self.AppendItem(self.current_year, months[i])
-            ny_month = self.AppendItem(self.next_year, months[i])
+        for i in range(1, 13):
+            month = self.AppendItem(self.current_year, months[i-1])
+            ny_month = self.AppendItem(self.next_year, months[i-1])
             days = [0, 0]
             if i in [1, 3, 5, 7, 8, 10, 12]:
                 days = [31, 31]

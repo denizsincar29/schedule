@@ -62,7 +62,7 @@ class MainWindow(wx.Frame):
         filemenu.Append(wx.ID_SAVE, "Сохранить в файл\tCTRL+S", "Сохранить расписание в файл")
         filemenu.Append(wx.ID_FILE3, "Экспорт в календарь", "Экспортировать расписание в календарь на телефоне")
         filemenu.Append(wx.ID_FILE1, "Информация о паре\tCTRL+G", "Показать, кто идёт на эту пару")
-        filemenu.AppendCheckItem(wx.ID_ADD, "Чюжое расписание", "Добавить друга для просмотра его расписания")
+        filemenu.AppendCheckItem(wx.ID_ADD, "Чужое расписание", "Добавить друга для просмотра его расписания")
         filemenu.AppendCheckItem(wx.ID_FILE2, "Просмотреть пересечение расписаний", "Просмотреть общие пары с другом")
         filemenu.Append(wx.ID_DELETE, "Очистить кеш", "Очистить кеш с расписанием")
         filemenu.Append(wx.ID_EXIT, "Выход\tAlt+F4", "Выход из программы")
