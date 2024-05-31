@@ -13,6 +13,7 @@ Source: "dist/nvdaControllerClient64.dll"; DestDir: "{app}"
 Source: "dist/SAAPI64.dll"; DestDir: "{app}"
 Source: "readme.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 Source: "news.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "changelog.md"; DestDir: "{app}"; Flags: ignoreversion
 
 
 

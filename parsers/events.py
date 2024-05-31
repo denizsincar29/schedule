@@ -250,7 +250,7 @@ class Event:
 
 
     def __contains__(self, item) -> bool:
-        return item.lower in str(self).lower()
+        return item.lower() in str(self).lower()
 
     def mark_new(self) -> Self:
         """Marks the event as new. Places a new diff mark and returns the event for chaining"""
@@ -667,11 +667,20 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
             return "Пар нет!"
         msg=""
         prev_date=date(2020, 1, 1)# to instantly print the first date
-        for event in self.events:
+        double_evt=False
+        for i, event in enumerate(self.events):
+            if double_evt:
+                double_evt=False
+                continue
             if event.event_date!=prev_date:
                 msg+=f"\n{russian_date(event.event_date)}:"
                 prev_date=event.event_date
             self.tokens.append((event, len(msg)))
+            # if next event is in the same day but the same room, name and teacher, we can write "2 пары" or even "3 пары"
+            if i+1<len(self.events) and self.events[i+1].event_date==event.event_date and self.events[i+1].room_name==event.room_name and self.events[i+1].event_name==event.event_name and self.events[i+1].teacher==event.teacher:
+                msg+=f"\nДвойная пара: пары {event.event_num} и {self.events[i+1].event_num}. {event.format}, {event.event_name}. Преподаватель {event.teacher}. В аудитории: {event.room_name}. По адресу: {event.address}."
+                double_evt=True  # skip the next event because we have already written it
+                continue
             msg+=f"\n{event.humanize(event_times)}"
         return msg.strip()
 

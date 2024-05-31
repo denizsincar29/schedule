@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, date #, time
 from dateutil.relativedelta import relativedelta
+from asyncio import Event as AEvent  # we already have an Event class
 import json
 import os
-from modeus import modeus_parse_token, get_schedule, search_person, who_goes, modeus_auth
+from modeus import modeus_parse_token, get_schedule, get_schedule_async, search_person, who_goes, modeus_auth
 # getting rid of old schedparser and using new one
 from parsers.events import Event, Events
 from parsers.people import Person, People, noone, Employee
@@ -67,6 +68,7 @@ class Schedule:
         self.people=People()  # self.current_person is now self.people.current and friend is self.people.friend
         self.last_events=Events()
         self.last_msg=""
+        self.schedstop=AEvent()  # event to stop the schedule thread
         self.config=Config()
         if not os.path.exists("cache"):
             os.mkdir("cache")
@@ -126,7 +128,7 @@ class Schedule:
         """Loads people from people.json. If file does not exist, it will create an empty list."""
         self.people=People.from_cache()
 
-    def get_schedule(self, person: Person=noone, start_time: date=None, end_time: date=None, overlap: Person=noone) -> Events:
+    def get_schedule(self, person: Person=noone, start_time: date=None, end_time: date=None, overlap: Person=noone, on_finish=None) -> Events:
         """
         Gets schedule for a person.
 
@@ -135,9 +137,10 @@ class Schedule:
         start_time (datetime): start time of the schedule. If not given, it will get schedule for today.
         end_time (datetime): end time of the schedule. If not given, it will get schedule for today.
         overlap (Person): person to get overlapping events. If not given, it will get schedule for person_id.
+        on_finish (function): function to run after the schedule is fetched if run asynchronously.
 
         Returns:
-        list: Schedule of the person in json format.
+        list: Schedule of the person in json format. If async, it will return None quickly and pass the result to on_finish function.
         """
         if person==noone:
             person=self.people.current
@@ -152,6 +155,11 @@ class Schedule:
             end_time=start_time+timedelta(days=1, seconds=-1)  # end of the day
         else:
             end_time=moscow.localize(datetime.combine(end_time, datetime.min.time()))+timedelta(days=1, seconds=-1)
+        if on_finish is not None:
+            cb=lambda x: on_finish(Events.from_big_mess(x))
+            self.schedstop.clear()
+            get_schedule_async(person.person_id, self.token, start_time, end_time, cb, self.schedstop)
+            return Events([])
         try:
             g=Events.from_big_mess(get_schedule(person.person_id, self.token, start_time, end_time))
             if overlap!=noone:
@@ -320,14 +328,36 @@ class Schedule:
         if overlap is None:
             overlap=noone
         # print involved people
-        if overlap!=noone or person!=self.people.current:  # if we overlap or we don't get our own schedule
-            self.last_events=self.get_schedule(person, start_time, end_time, overlap)
-            return self.last_events
         self.last_events=self.search_in_cache(person, start_time, end_time)
         if self.last_events.nocache: # if not nocache then just no events
             print("warning: cache miss. This is not recommended. Load cache manually for this function to work faster!")  # don't trigger this warning in production!
             self.last_events=self.get_schedule(person, start_time, end_time)
         return self.last_events
+
+    def schedule_async(self, person: Person=noone, start_time: date=None, end_time: date=None, overlap: Person=noone, on_finish=None):
+        """
+        Gets schedule for a person asynchronously. It caches the schedule for the day. This function is recommended to use.
+
+        Parameters:
+        person (Person): the person to get schedule.
+        start_time (date): start time of the schedule. If not given, it will get schedule for today.
+        end_time (date): end time of the schedule. If not given, it will get schedule for today.
+        overlap (person): person to get overlapping events.
+        on_finish (function): function to run after the schedule is fetched.
+
+        Returns:
+        None: Returns None quickly and pass the result to on_finish function.
+        """
+        if start_time is None:
+            start_time=date.today()
+        if end_time is None:
+            end_time=start_time
+        if overlap is None:
+            overlap=noone
+        def cb(x):
+            self.last_events=x
+            on_finish(x)
+        self.get_schedule(person, start_time, end_time, overlap, cb)
 
 #auth=modeus_auth # alias for modeus_auth
 

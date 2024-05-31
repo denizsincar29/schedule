@@ -24,8 +24,22 @@ from wx import CallAfter as wxrun  # fully rewriting the thread not to use queue
 from win11toast import notify
 from ical_share import upload_ical, get_ical, GotICalCheck
 import os
+import asyncio
 import dotenv # move dotenv check here
+import ctypes
+from time import time
 
+def raise_to_thread(target_tid, exception):
+    ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(target_tid), ctypes.py_object(exception))
+    # ref: http://docs.python.org/c-api/init.html#PyThreadState_SetAsyncExc
+    if ret == 0:
+        raise ValueError("Invalid thread ID")
+    elif ret > 1:
+        # Huh? Why would we notify more than one threads?
+        # Because we punch a hole into C level interpreter.
+        # So it is better to clean up the mess.
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(target_tid, NULL)
+        raise SystemError("PyThreadState_SetAsyncExc failed")
 
 dotdotdot=... # for the match statement
 
@@ -33,6 +47,8 @@ dotdotdot=... # for the match statement
 def randomsound():
     greatsounds=["Alarm4", "Alarm6", "Alarm10"]
     return f"ms-winsoundevent:Notification.Looping.{choice(greatsounds)}"
+
+
 
 
 class App(Thread):
@@ -69,15 +85,16 @@ class App(Thread):
                     together=command[4] if command[4] is not None else False
                     c_person=self.schedule.people.current if itsme else self.schedule.people.friend
                     t_person=self.schedule.people.current if not itsme and together else noone  # if we are together, we need to pass the friend. Otherwise, we pass noone
+                    #self.schedule.schedule_async(c_person, command[1], command[2],  t_person, cb)  # very experimental
                     wxrun(cb, self.schedule.schedule(c_person, command[1], command[2], t_person).humanize(False))
                 case "fullname":
                     wxrun(cb, self.schedule.search_person(command[1], False), command[2])
                 case "saveperson":
                     if command[2] is None:
-                        command[2]=True  # we need to pass a boolean to the function
+                        command[2]=True  # itsme
                     self.schedule.save_result(command[1], command[2])
                     diffs=self.schedule.get_month(-1)  # -1 is the current month
-                    if len(diffs)>0:
+                    if len(diffs)>0 and command[2]:  # if we saved the main person, we need to notify the user
                         notify("Расписание изменилось!", diffs.human_diff(), audio=randomsound())
                 case "check_credentials":
                     self.check_credentials(command[1], command[2], command[3])
@@ -99,7 +116,6 @@ class App(Thread):
                 case _:
                     print(("Unknown", "command"))
             self.forward.task_done()
-
 
 
     def check_credentials(self, email, password, direct_pass=False):

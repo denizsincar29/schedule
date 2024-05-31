@@ -124,11 +124,14 @@ def get_format_id(event_id, data):
 types_formats={
     "LECT": "Лекция",
     "SEMI": "Практическое занятие",
+    "SEMINAR": "Семинар",
     "SEMI_OTHER": "Практический курс",
     "LAB": "Лабораторная работа",
+    "LAB_RESEARCH": "Лабораторный опыт",
     "MID_CHECK": "Контрольная работа",
     "EXAMINATION": "Экзамен",
     "PRETEST": "Предэкзаменационная аттестация",
+    "CONS": "Консультация",
     None: ""  # some events don't have a type or format
 }
 

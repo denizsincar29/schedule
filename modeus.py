@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 from pytz import UTC
 from functools import lru_cache, partial
+import asyncio
 import time
 
 def modeus_parse_token(email: str, password: str) -> str:
@@ -164,6 +165,77 @@ def get_schedule(person_id: str, modeus_token: str, start_time: datetime, end_ti
         #with open("tt.json", "w", encoding="UTF-8") as f: json.dump(j["_embedded"], f, ensure_ascii=False, indent=2)
         if "_embedded" in j: return j
         else: raise RuntimeError("No key embedded")
+
+def get_schedule_async(person_id: str, modeus_token: str, start_time: datetime, end_time: datetime, on_finish, stop_event: asyncio.Event) -> None:
+    """
+    Get schedule of a person asynchronously.
+
+    Parameters:
+    person_id (str): person id.
+    modeus_token (str): modeus token.
+    start_time (datetime): start time.
+    end_time (datetime): end time.
+    on_finish (function): callback function.
+    stop_event (asyncio.Event): stop event.
+
+    Returns:
+    None.
+
+    Raises:
+    ValueError: if start_time >= end_time.
+    """
+    if end_time<=start_time:
+        raise ValueError("End time must be greater than start time!")
+    url = "https://narfu.modeus.org/schedule-calendar-v2/api/calendar/events/search?tz=Europe/Moscow"
+    # "/" must not be encoded
+    request_json = {
+        "size": 500,
+        "timeMin": start_time.astimezone(UTC).isoformat(timespec='seconds'),
+        "timeMax": end_time.astimezone(UTC).isoformat(timespec='seconds'),
+        "attendeePersonId": [person_id,]
+    }
+
+    headers = {
+        "Content-type": "application/json",
+        "Authorization": f"Bearer {modeus_token}"
+    }
+
+    async def get_schedule_async_inner():
+        async with httpx.AsyncClient(timeout=10) as client:
+            try:
+                while not stop_event.is_set():
+                    response_task = asyncio.create_task(client.post(
+                        url,
+                        json=request_json,
+                        headers=headers
+                    ))
+                    done, pending = await asyncio.wait(
+                        [response_task],
+                        timeout=1,
+                        return_when=asyncio.FIRST_COMPLETED
+                    )
+
+                    if stop_event.is_set():
+                        for task in pending:
+                            task.cancel()
+                        break
+
+                    if response_task in done:
+                        response = response_task.result()
+                        response.raise_for_status()
+                        j = response.json()
+                        on_finish(j)
+                        break  # Exit the loop after the first successful request
+            except httpx.RequestError as exc:
+                print(f"An error occurred while requesting {exc.request.url!r}.")
+            except httpx.HTTPStatusError as exc:
+                print(f"Error response {exc.response.status_code} while requesting {exc.request.url!r}.")
+            except asyncio.CancelledError:
+                print("The task was cancelled.")
+    #asyncio.create_task(get_schedule_async_inner())  # this gives no event loop error
+    async def run():
+        task = asyncio.create_task(get_schedule_async_inner())
+    asyncio.run(run())
 
 def search_person(term: str, by_id: bool, modeus_token: str) -> dict:
     """
