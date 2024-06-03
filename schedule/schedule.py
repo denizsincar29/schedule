@@ -3,10 +3,10 @@ from dateutil.relativedelta import relativedelta
 from asyncio import Event as AEvent  # we already have an Event class
 import json
 import os
-from modeus import modeus_parse_token, get_schedule, get_schedule_async, search_person, who_goes, modeus_auth
+from .modeus import modeus_parse_token, get_schedule, get_schedule_async, search_person, who_goes, modeus_auth
 # getting rid of old schedparser and using new one
-from parsers.events import Event, Events
-from parsers.people import Person, People, noone, Employee
+from .parsers.events import Event, Events
+from .parsers.people import Person, People, noone, Employee
 
 from pytz import timezone
 

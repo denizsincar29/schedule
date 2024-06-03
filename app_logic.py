@@ -1,19 +1,4 @@
 # app logic for the wxpython app
-'''
-a short doc on how to send commands to the app thread:
-- the command is a list with the first element being the command name and the rest being the arguments
-- the command is send using the send_command method
-- the command is executed in the app thread and the result is sent back to the main thread using the callback function
-- at the start of the app thread, the on_auth function is called with the result of the authentication. If explisitly needed, the check_credentials function can be called to re-authenticate the user with the None callback, since the callback for check credentials is on_auth.
-commands:
-- schedule: get the schedule for the current person. The arguments are the start and end dates in the datetime object and an overlap person id (str). The result is the schedule string.
-- fullname: search for a person by their full name. The argument is the full name. The result is a list of person dicts.
-saveperson: save the person with the given index in results list. The arguments is the person id and a boolean whether this person is the main person or friend which schedule is being viewed. No callback.
-- check_credentials: check the credentials. The arguments are the email and password. The result is the authentication result, which is passed to the on_auth function. No other callback.
-- exit: exit the app thread. No arguments, no callback.
-
-
-'''
 
 
 from schedule import Schedule, auth, noone

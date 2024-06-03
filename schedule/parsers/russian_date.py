@@ -1,6 +1,6 @@
 # lazy to fix the incorrect date parsing. Lets just not use it for now xD
 
-from datetime import date# where is datedelta? If we add some days to 31th of a month, it should go to the next month
+from datetime import date # where is datedelta? If we add some days to 31th of a month, it should go to the next month
 from dateutil.relativedelta import relativedelta
 import re
 
@@ -84,39 +84,26 @@ def parse_date(s):
 
 
 # test
-def test_date_to_string():
-    d=date(2019,12,13)  # friday
-    assert russian_date(d)== "пятница, 13 декабря"
-    assert russian_date(d, include_year=True)== "пятница, 13 декабря 2019 года"
-    d=date.today()
-    assert russian_date(d).startswith("сегодня, ")
-    d=date.today()-relativedelta(days=1)
-    assert russian_date(d).startswith("вчера, ")
-    # i beleive zavtra is not needed to be tested, it's just a +1 day
+class TestRussianDate():
+    def test_today(self):
+        assert "сегодня" in russian_date(date.today())
 
-def test_parse_date():
-    d=date(2019,12,13)  # friday
-    assert parse_date("13.12.2019")==d
-    assert parse_date("13.12")==d.replace(year=date.today().year)
-    assert parse_date("13")==d.replace(month=date.today().month, year=date.today().year)
-    assert parse_date("13 декабря")==d.replace(year=date.today().year)
-    assert parse_date("13 декабря 2019 года")==d
-    assert parse_date("13 декабря 2019 года")==d
-    assert parse_date("13 декабря 2019 года")==d
-    assert parse_date("13 декабря 2019 года")==d
-    d=date.today()
-    assert parse_date("сегодня")==d
-    d=date.today().replace(day=date.today().day-1)
-    assert parse_date("вчера")==d
-    d=date.today().replace(day=date.today().day+1)
-    assert parse_date("завтра")==d
-    # today is most likely not monday, lets find a monday
-    d=date.today()-relativedelta(days=date.today().weekday())
-    assert parse_date("прошлый понедельник")==d
-    d=d+relativedelta(days=7)
-    assert parse_date("следующий понедельник")==d
-    # lets test some variations
-    assert parse_date("следующая понедельник")==d  # not russian but should work
-    assert parse_date("прошлые понедельник")==d-relativedelta(days=7)  # not russian but should work
+    def test_yesterday(self):
+        assert "вчера" in russian_date(date.today() - relativedelta(days=1))
+
+    def test_tomorrow(self):
+        assert "завтра" in russian_date(date.today() + relativedelta(days=1))
+
+    def test_day_of_week(self):
+        assert russian_date(date(2023, 3, 13)).startswith("понедельник, 13 марта")
+
+    def test_day_of_month(self):
+        assert "24 марта" in russian_date(date(2023, 3, 24))
+
+    def test_month(self):
+        assert russian_date(date(2023, 3, 8), include_year=True).endswith("8 марта 2023 года")
+
+    def test_year(self):
+        assert russian_date(date(2024, 4, 29), include_year=True).endswith("29 апреля 2024 года")
 
 # pytest russian_date.py

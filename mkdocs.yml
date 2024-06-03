@@ -1,0 +1,5 @@
+site_name: Schedule Docs
+theme:
+  name: "material"
+plugins:
+  - mkdocstrings

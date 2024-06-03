@@ -9,7 +9,7 @@ import wx
 from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG, ShowQRCode
 from datepicker import DatePicker
 from app_logic import App
-from parsers.people import noone, People
+from schedule.parsers.people import noone, People
 from news import news
 from autoupdate.wxupdate import Updater, VERSION, restart, YouWannaUpdateDialog, ProgressDlg
 from webbrowser import open as webopen
