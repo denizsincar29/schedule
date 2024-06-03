@@ -479,7 +479,7 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         # read from cache to differentiate the events
         old_events=Events.from_cache(month, person_id)  # attention! recursive call
         with open(f"cache/{month}.{person_id}.json", "w", encoding="UTF-8") as f:
-            json.dump(self.__list__(), f)
+            json.dump(self.__list__(), f, ensure_ascii=False)
         return self.diff(old_events)
 
 

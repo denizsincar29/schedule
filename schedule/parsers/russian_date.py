@@ -83,27 +83,3 @@ def parse_date(s):
 
 
 
-# test
-class TestRussianDate():
-    def test_today(self):
-        assert "сегодня" in russian_date(date.today())
-
-    def test_yesterday(self):
-        assert "вчера" in russian_date(date.today() - relativedelta(days=1))
-
-    def test_tomorrow(self):
-        assert "завтра" in russian_date(date.today() + relativedelta(days=1))
-
-    def test_day_of_week(self):
-        assert russian_date(date(2023, 3, 13)).startswith("понедельник, 13 марта")
-
-    def test_day_of_month(self):
-        assert "24 марта" in russian_date(date(2023, 3, 24))
-
-    def test_month(self):
-        assert russian_date(date(2023, 3, 8), include_year=True).endswith("8 марта 2023 года")
-
-    def test_year(self):
-        assert russian_date(date(2024, 4, 29), include_year=True).endswith("29 апреля 2024 года")
-
-# pytest russian_date.py

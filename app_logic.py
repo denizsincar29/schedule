@@ -118,6 +118,9 @@ class App(Thread):
                     f.write(f"MODEUS_EMAIL={email}\nMODEUS_PASSWORD={password}\n")
             self.schedule=Schedule(email, password, self.on_error)
             self.schedule.load_people()
+            diffs=self.schedule.get_month(-1)  # -1 is the current month
+            if len(diffs)>0 and command[2]:  # if we saved the main person, we need to notify the user
+                notify("Расписание изменилось!", diffs.human_diff(), audio=randomsound())
         if self.on_auth:
             wxrun(self.on_auth, authed, errmsg)
 
