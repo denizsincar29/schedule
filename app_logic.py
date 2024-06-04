@@ -68,6 +68,8 @@ class App(Thread):
                 case "schedule":
                     itsme=command[3] if command[3] is not None else True
                     together=command[4] if command[4] is not None else False
+                    if self.schedule is None:
+                        continue
                     c_person=self.schedule.people.current if itsme else self.schedule.people.friend
                     t_person=self.schedule.people.current if not itsme and together else noone  # if we are together, we need to pass the friend. Otherwise, we pass noone
                     #self.schedule.schedule_async(c_person, command[1], command[2],  t_person, cb)  # very experimental
