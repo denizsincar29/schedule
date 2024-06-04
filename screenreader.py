@@ -3,8 +3,10 @@ import os
 
 win= sys.platform == 'win32'
 if win:
+    from win11toast import notify
     from cytolk import tolk
-
+else:
+    notify=lambda *args, **kwargs: None
 
 
 # all functions are working only on Windows, so dummy functions are used on other platforms

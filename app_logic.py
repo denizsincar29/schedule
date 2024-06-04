@@ -6,8 +6,8 @@ from threading import Thread
 from queue import Queue
 from random import choice
 from wx import CallAfter as wxrun  # fully rewriting the thread not to use queues.
-from win11toast import notify
 from ical_share import upload_ical, get_ical, GotICalCheck
+from screenreader import notify
 import os
 import asyncio
 import dotenv # move dotenv check here
