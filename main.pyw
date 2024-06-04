@@ -230,7 +230,7 @@ class MainWindow(wx.Frame):
     def check_auth_cb(self, state, msg):
         if self.progress:  # dont do anything if progress dialog is open. We dont want to show any dialogs while updating
             return
-        if not self.updater.dead:
+        if self.updator is not None and not self.updater.dead:
             self.must_check_auth=(True, state, msg)  # here we end.
             return
         if state==True:  #noqa
