@@ -8,3 +8,4 @@ icalendar
 qrcode
 pillow
 markdown
+dotenv
