@@ -4,7 +4,7 @@ from pytz import timezone
 from autoupdate.update import console_update, ver, VERSION
 import os
 import dotenv
-from sys import exit  # pyinstaller can't find it in some cases
+from sys import exit, platform  # pyinstaller can't find it in some cases
 
 from inputval import inputwhile, input_int, inputwhile_ctrlc, ContinueLoop
 import re
@@ -110,7 +110,8 @@ def command(cmd):  # inputwhile callback
 
 
 # main code bookmark
-console_update()
+if platform=="win32":
+    console_update()
 dotenv.load_dotenv(".env")
 print("Программа для просмотра расписания студентов, преподавателей и прочих людей в САФУ.")
 print(f"Автор: Дениз Синджар <deniz@r1oaz.ru> 2024, версия {VERSION}")

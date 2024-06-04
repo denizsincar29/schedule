@@ -18,7 +18,7 @@ class MainWindow(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, parent=None, title=f"Расписание САФУ ({VERSION})", size=(800, 600), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         self.app=App(self.check_auth_cb, self.on_error)
-        self.updater=Updater(self.on_update, self.on_total, self.on_progress, self.on_restart, self.on_no_update)
+        self.updater=Updater(self.on_update, self.on_total, self.on_progress, self.on_restart, self.on_no_update) if sys.platform=="win32" else None
         self.progress=None  # to not get attribute error
         self.offline=False
         self.authed=False
