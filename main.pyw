@@ -4,7 +4,7 @@ import sys
 import os
 from ical_share import GotICalCheck
 from shutil import rmtree
-from cytolk import tolk
+import screenreader as tolk
 import wx
 from guinput import GUInput, ChooseFromList, AuthInput, PopUpMSG, ShowQRCode
 from datepicker import DatePicker
@@ -201,7 +201,7 @@ class MainWindow(wx.Frame):
     def status(self, text, speak=True):
         self.SetStatusText(text)
         if speak:
-            tolk.output(text)
+            sr.output(text)
 
     def OnSaveToTxt(self, event):
         with wx.FileDialog(self, "Сохранить расписание", defaultFile="schedule.txt", wildcard="Text files (*.txt)|*.txt", style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
@@ -383,6 +383,6 @@ if __name__ == "__main__":
     wxapp = wx.App(False)
     if "hide" in sys.argv:  # run as daemon
         showhide = True
-    with tolk.tolk():  # for screen reader
+    with tolk.ScreenReader() as sr:
         frame = MainWindow()
         wxapp.MainLoop()
