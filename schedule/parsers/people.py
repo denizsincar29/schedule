@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 import json
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    Self=type("Self", (), {})
+
 from .mess import get_person_info
 
 

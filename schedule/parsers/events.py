@@ -3,7 +3,10 @@ from pytz import timezone
 from .russian_date import russian_date
 from dataclasses import dataclass, field
 from copy import deepcopy
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    Self=type("Self", (), {})
 from . import mess, people
 import json
 import icalendar
