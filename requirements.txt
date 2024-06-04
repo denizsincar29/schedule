@@ -1,3 +1,4 @@
+wxpython
 python-dateutil
 pytz
 pydotdict
