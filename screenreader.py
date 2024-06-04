@@ -1,8 +1,11 @@
-from cytolk import tolk
 import sys
 import os
 
 win= sys.platform == 'win32'
+if win:
+    from cytolk import tolk
+
+
 
 # all functions are working only on Windows, so dummy functions are used on other platforms
 class ScreenReader:
