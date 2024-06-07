@@ -131,6 +131,7 @@ types_formats={
     "MID_CHECK": "Контрольная работа",
     "EXAMINATION": "Экзамен",
     "PRETEST": "Предэкзаменационная аттестация",
+"DIFF_PRETEST": "Дифференцированный зачёт"
     "CONS": "Консультация",
     None: ""  # some events don't have a type or format
 }
