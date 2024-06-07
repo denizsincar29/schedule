@@ -597,6 +597,107 @@ main.pyw - главный файл программы. Запускает гра
 ##### Возвращает:
 - `str`: Тип и формат события.
 
+### Модуль: modeus
+
+#### Функция: `modeus_parse_token(email: str, password: str) -> str`
+
+Извлекает id_token с сервера modeus.
+
+##### Параметры:
+- `email` (str): электронная почта.
+- `password` (str): пароль.
+
+##### Возвращает:
+- `str`: id_token.
+
+##### Исключения:
+- `RuntimeError`: если не удается разобрать 1-ю форму, 2-ю форму или id_token.
+
+#### Функция: `modeus_auth(email: str, password: str) -> bool`
+
+Проверяет, правильны ли учетные данные пользователя.
+
+##### Параметры:
+- `email` (str): электронная почта.
+- `password` (str): пароль.
+
+##### Возвращает:
+- `bool`: `True`, если учетные данные верны, в противном случае `False`.
+
+##### Исключения:
+- `RuntimeError`: если не удается разобрать 1-ю форму или 2-ю форму.
+
+#### Функция: `get_schedule(person_id: str, modeus_token: str, start_time: datetime, end_time: datetime) -> dict`
+
+Получает расписание человека.
+
+##### Параметры:
+- `person_id` (str): идентификатор человека.
+- `modeus_token` (str): токен modeus.
+- `start_time` (datetime): начальное время.
+- `end_time` (datetime): конечное время.
+
+##### Возвращает:
+- `dict`: огромный JSON с расписанием.
+
+##### Исключения:
+- `ValueError`: если `start_time >= end_time`.
+- `RuntimeError`: если не удается найти вложенный ключ.
+
+#### Функция: `get_schedule_async(person_id: str, modeus_token: str, start_time: datetime, end_time: datetime, on_finish, stop_event: asyncio.Event) -> None`
+
+Получает расписание человека асинхронно.
+
+##### Параметры:
+- `person_id` (str): идентификатор человека.
+- `modeus_token` (str): токен modeus.
+- `start_time` (datetime): начальное время.
+- `end_time` (datetime): конечное время.
+- `on_finish` (функция): функция обратного вызова.
+- `stop_event` (asyncio.Event): событие остановки.
+
+##### Возвращает:
+- `None`.
+
+##### Исключения:
+- `ValueError`: если `start_time >= end_time`.
+
+#### Функция: `search_person(term: str, by_id: bool, modeus_token: str) -> dict`
+
+Ищет человека в базе данных университета.
+
+##### Параметры:
+- `term` (str): поисковый запрос.
+- `by_id` (bool): поиск по идентификатору или по полному имени.
+- `modeus_token` (str): токен modeus.
+
+##### Возвращает:
+- `dict`: огромный JSON с результатами поиска.
+
+##### Исключения:
+- `RuntimeError`: если не удается найти вложенный ключ.
+
+#### Функция: `who_goes(event_id: str, modeus_token: str) -> dict`
+
+Получает участников события.
+
+##### Параметры:
+- `event_id` (str): идентификатор события.
+- `modeus_token` (str): токен modeus.
+
+##### Возвращает:
+- `dict`: огромный JSON с участниками.
+
+##### Исключения:
+- `RuntimeError`: если не удается найти вложенный ключ.
+
+#### Класс: `TimeCache`
+
+Класс, кеширующий результаты функции на определенное время.
+
+#### Функция: `is_connected()`
+
+Функция, проверяющая наличие интернет-соединения. Кеширует результат на 5 секунд.
 
 
 
