@@ -1,3 +1,5 @@
+**Note**: This repo is no longer maintained and supported! I'm rewriting my buggy code. Also, I don't want to deal with GUI anymore, I'm planning to make a pwa.
+
 # schedule 1.0
 by Deniz Sincar <deniz@r1oaz.ru>  
 This program is designed to view the schedule of students, teachers and other people at Northern Arctic Federal University (Arkhangelsk, Russia).
