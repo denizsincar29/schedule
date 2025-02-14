@@ -1,4 +1,5 @@
 .env
+.venv/
 .cache/
 people.json
 __pycache__/
