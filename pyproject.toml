@@ -1,7 +1,13 @@
 [project]
-name = "safu"
-version = "0.1.0"
-description = "Add your description here"
+name = "schedule"
+version = "2.0.0"
+description = "A simple app to fetch and display the user's university schedule."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "httpx>=0.28.1",
+    "icalendar>=6.1.1",
+    "python-dateutil>=2.9.0.post0",
+    "python-dotenv>=1.0.1",
+    "pytz>=2025.1",
+]
