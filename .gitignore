@@ -3,4 +3,4 @@
 .cache/
 people.json
 __pycache__/
-*.txt
+schedule.txt
