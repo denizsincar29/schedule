@@ -68,6 +68,24 @@ def ask_choice_from_list(lst, prompt):
                 print("Введите число")
     return None
 
+# function that prints a list or a long string of text with press-enter pagination
+def longprint(val, pagesize=10):
+    # if string, split to lines. If other iterable, start with it
+    if isinstance(val, str):
+        val = val.split("\n")
+    # print lines or elements
+    for i, line in enumerate(val):
+        print(line)
+        if i % pagesize == pagesize - 1:
+            try:
+                q = input("Далее...")
+                # if q is not empty, we'll count it as a break
+                if q:
+                    break
+            except KeyboardInterrupt:
+                break
+
+
 
 if __name__ == "__main__":
     def test_callback(result):

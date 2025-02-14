@@ -170,7 +170,9 @@ class Schedule:
         if self.get_only_friends:
             overlap=self.current_person
         if overlap.type is not NoOne:
-            return self.fetch_schedule(start_time, end_time)
+            s = self.fetch_schedule(start_time, end_time)
+            self.last_events = s  # to save to file after viewer by request.
+            return s
         try:
             evts = self.load_timed_schedule(start_time, end_time)
             if len(evts)==0:
@@ -180,6 +182,7 @@ class Schedule:
         except FileNotFoundError:
             self.cache_schedule(start_time, end_time)
             evts = self.load_timed_schedule(start_time, end_time)
+        self.last_events = evts
         return evts
 
     # make a call alias for schedule, because it's a main function.
@@ -210,9 +213,9 @@ class Schedule:
         now=moscow.localize(datetime.now())
         evts = self.schedule()  # automatically gets the schedule for today.
         for evt in evts:
-            if evt.start_time<=now<=evt.end_time:
+            if evt.start_datetime<=now<=evt.end_datetime:
                 return evt
-            
+
 
     @property
     def next(self) -> Event:
@@ -220,7 +223,7 @@ class Schedule:
         now=moscow.localize(datetime.now())
         evts = self.schedule()
         for evt in evts:
-            if evt.start_time>now:
+            if evt.start_datetime>now:
                 return evt
 
     @property
@@ -231,19 +234,23 @@ class Schedule:
         for evt in evts:
             if evt.start_time<=now<=evt.end_time:
                 return True
+        return False
 
     @property
     def on_break(self) -> bool:
         # careful, it must find out if it's a real break and not night or before the first event!
+        # return false if 0 events today
         evts = self.schedule()
+        if len(evts)==0:
+            return False  # it can't be a break if there is no event.
         now=moscow.localize(datetime.now())
         for i, evt in enumerate(evts):
-            if evt.start_time<=now<=evt.end_time:
+            if evt.start_datetime<=now<=evt.end_datetime:
                 return False
             # from now on, we are on an eventless time. Either break or rest of the day.
-            if i==0 and now<evt.start_time:  # before the first event
+            if i==0 and now<evt.start_datetime:  # before the first event
                 return False
-            if i==len(evts)-1 and now>evt.end_time:  # after the last event
+            if i==len(evts)-1 and now>evt.end_datetime:  # after the last event
                 return False
         return True  # yess, loop is over and none of the conditions are met.
 
@@ -254,7 +261,7 @@ class Schedule:
         evts = self.schedule()
         now=moscow.localize(datetime.now())
         # return true if length is 0
-        return len(evts)==0 or now<evts[0].start_time or now>evts[-1].end_time  # one-liner to check if it's a non-working time.
+        return len(evts)==0 or now<evts[0].start_datetime or now>evts[-1].end_datetime  # one-liner to check if it's a non-working time.
 
     def search_person(self, term: str, by_id: bool) -> People:
         """

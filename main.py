@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import date, timedelta
 from schedule import Schedule, People, noone
 from datecommand import parse_date
-from cutils import ask_choice_from_list, ask_while, CallFailed
+from cutils import ask_choice_from_list, ask_while, longprint, CallFailed
 
 # Load environment variables
 dotenv.load_dotenv()
@@ -119,13 +119,15 @@ while True:
                     print(evt)
             case "next" | "следующий" | "следующая" | "следующее" | "дальше" | "далее":  # this has record amount of synonyms!
                 evt = schedule.next
-                print(evt)
+                print(evt if evt is not None else "Следующей пары нет")
             case "new friend" | "новый друг":
                 try:
                     ask_name("Введите фио: ", people, str(people_path))
                     schedule.overlap = people[-1]
                     schedule.get_only_friends = True
                     print("Сейчас вы просматриваете расписание этого человека. Чтобы вернуться к своему, введите 'me'")
+                    # debug prints:
+                    print(f"overlap: {schedule.overlap}\nme: {schedule.current_person}")
                 except RuntimeError as e:
                     print(e)
             case "me" | "я":
@@ -140,7 +142,26 @@ while True:
                 person = choose_friends(people)
                 schedule.overlap = person
                 schedule.get_only_friends = False # me also, we get events that overlap with this person
-            
+            case "who goes" | "кто идёт":
+                # get events that are last fetched and ask for the event
+                s = schedule.last_events
+                if not s:
+                    print("Сегодня пар нет")
+                    continue
+                print("Выберите пару:")
+                evt = ask_choice_from_list(s, "Выберите пару: ")
+                if evt is None:
+                    continue
+                hg = schedule.who_goes(evt)
+                if hg:
+                    print("На эту пару идут:")
+                    longprint(hg)  # beautiful print with page pauses and early exit
+                else:
+                    print("На эту пару никто не идёт")  # impossible to reach. At least I and teacher go!
+            case "file" | "файл":
+                with Path("schedule.txt").open("w", encoding="UTF-8") as f:
+                    f.write(str(schedule.last_events))  # get what was last printed
+                print("Расписание сохранено в файле schedule.txt")
             case "help" | "помощь":
                 with Path("command_help.md").open("r", encoding="UTF-8") as f:
                     print(f.read())
@@ -150,10 +171,9 @@ while True:
                 try:
                     start_time, end_time = parse_date(cmd)
                     print(schedule(start_time=start_time, end_time=end_time))
-                except ValueError as e:
-                    print(e)
+                except ValueError:
+                    print("Не удалось распознать команду")  # all cases are handled, now date parsing is the only thing left and failed
         # check if person is None or NoOne
-
     except Exception as e:
         #print(f"Произошла ошибка: {e}")
         raise e  # will it raise the same error as handled above?
