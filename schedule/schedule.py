@@ -18,14 +18,13 @@ class NoCacheError(Exception):
 
 class Schedule:
     """The main class for abstracting the modeus api"""
-    def __init__(self, email: str, password: str, default_person: Person=noone, cache_folder: str=".cache"):
+    def __init__(self, email: str, password: str, cache_folder: str=".cache"):
         """
         Initialize the Schedule object with email and password. It will check the token and load it if it's not expired.
 
         Parameters:
         email (str): Email for modeus
         password (str): Password for modeus
-        default_person (Person): Default person to get schedule. If not given, it will get schedule for self.people.current
         cache_folder (str): Folder to save the cache. If not given, it will save in .cache folder.
         """
         self.email=email if "@edu.narfu.ru" in email else email+"@edu.narfu.ru"
@@ -36,13 +35,12 @@ class Schedule:
         self.last_msg=""
         self.cache_folder=Path(cache_folder)
         self.cache_folder.mkdir(exist_ok=True)
+        self.me_id = None
         
         self.check_token()
-        self.current_person: Person=default_person
-        self.overlap: Person=noone
-        self.get_only_friends=False  # only overlapped friend's schedule, not mine.
-        # update cache for today to next 3 weeks
-        self.cache_schedule(datetime.now(), datetime.now()+timedelta(days=21), True)
+
+    def set_me_id(self, me_id: str):
+        self.me_id = me_id
 
     def check_token(self):
         """
@@ -60,25 +58,20 @@ class Schedule:
                 raise e
             self.expire=datetime.now()+timedelta(hours=12)  # modeus token lives for 12 hours and dies!
 
-    def set_person(self, person: Person):
-        """Set the current person to get schedule."""
-        self.current_person=person
-
-    def fetch_schedule(self, start_time: date=None, end_time: date=None) -> Events:
+    def fetch_schedule(self, person_id: str, start_time: date=None, end_time: date=None) -> Events:
         """
         Gets schedule for a person.
 
         Parameters:
+        person_id (str): ID of the person to get schedule for.
         start_time (datetime): start time of the schedule. If not given, it will get schedule for today.
         end_time (datetime): end time of the schedule. If not given, it will get schedule for today.
 
         Returns:
         list: Schedule of the person in json format. If async, it will return None quickly and pass the result to on_finish function.
         """
-        person=self.current_person if not self.get_only_friends else self.overlap
-        if person==noone:
-            raise ValueError("No person to get schedule.")
-        overlap=self.overlap if not self.get_only_friends else noone
+        if not person_id:
+            raise ValueError("No person_id to get schedule.")
         self.check_token()
         if start_time is None:
             start_time=moscow.localize(datetime.now()).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -88,36 +81,33 @@ class Schedule:
             end_time=start_time+timedelta(days=1, seconds=-1)  # end of the day
         else:
             end_time=moscow.localize(datetime.combine(end_time, datetime.max.time()))
-        g=Events.from_big_mess(get_schedule(person.person_id, self.token, start_time, end_time))
-        if overlap!=noone:
-            h=Events.from_big_mess(get_schedule(overlap.person_id, self.token, start_time, end_time))
-            return g.overlap(h)
-        return g
+        return Events.from_big_mess(get_schedule(person_id, self.token, start_time, end_time))
 
-    def cache_schedule(self, start_time: date=None, end_time: date=None, override: bool=False) -> None:
+    def cache_schedule(self, person_id: str, start_time: date=None, end_time: date=None, override: bool=False) -> None:
         """
         Caches the schedule for a person.
 
         Parameters:
+        person_id (str): ID of the person to cache schedule for.
         start_time (datetime): start time of the schedule. If not given, it will get schedule for today.
         end_time (datetime): end time of the schedule. If not given, it will get schedule for today.
         override (bool): If True, it will override the cache, else it will append to the cache.
         """
-        events = self.fetch_schedule(start_time, end_time)
-        folder=self.cache_folder  # lazy to rewrite the code
-        person=self.current_person  # It's &mut self.current_person but in python.
-        # we need to read the cache and append to it. If there is no cache, then create a new one.
+        if person_id != self.me_id:
+            return
+        events = self.fetch_schedule(person_id, start_time, end_time)
+        folder=self.cache_folder
         if not override:
             try:
-                with (folder/f"{person.person_id}.json").open("r", encoding="utf-8") as f:
+                with (folder/f"{person_id}.json").open("r", encoding="utf-8") as f:
                     old_events=Events.from_prepared_json(json.load(f))
                     events += old_events  # this object automatically removes duplicates when adding.
             except FileNotFoundError:
                 pass  # i got ya!
-        with (folder/f"{person.person_id}.json").open("w", encoding="utf-8") as f:
+        with (folder/f"{person_id}.json").open("w", encoding="utf-8") as f:
             f.write(events.json())
 
-    def load_schedule(self) -> Events:
+    def load_schedule(self, person_id: str) -> Events:
         """
         Loads the schedule from cache.
 
@@ -125,15 +115,15 @@ class Schedule:
         Events: Schedule of the person in json format.
         """
         folder=self.cache_folder
-        person=self.current_person
-        with (folder/f"{person.person_id}.json").open("r", encoding="utf-8") as f:
+        with (folder/f"{person_id}.json").open("r", encoding="utf-8") as f:
             return Events.from_prepared_json(json.load(f))
 
-    def load_timed_schedule(self, start_time: date=None, end_time: date=None) -> Events:
+    def load_timed_schedule(self, person_id: str, start_time: date=None, end_time: date=None) -> Events:
         """
         Loads the schedule from cache.
 
         Parameters:
+        person_id (str): ID of the person to load schedule for.
         start_time (datetime): start time of the schedule. If not given, it will get schedule for today.
         end_time (datetime): end time of the schedule. If not given, it will get schedule for today.
 
@@ -149,62 +139,52 @@ class Schedule:
         else:
             end_time=moscow.localize(datetime.combine(end_time, datetime.max.time()))
         # now load the whole schedule
-        events = self.load_schedule()
+        events = self.load_schedule(person_id)
         # now filter the schedule
         return events.get_events_between_dates(start_time.date(), end_time.date())  # empty list if no events
 
-    def schedule(self, start_time: date=None, end_time: date=None) -> Events:
+    def schedule(self, person_id: str, start_time: date=None, end_time: date=None) -> Events:
         """
         Gets schedule for a person. If the schedule is not cached, it will fetch the schedule and cache it.
 
         Parameters:
+        person_id (str): ID of the person to get schedule for.
         start_time (datetime): start time of the schedule. If not given, it will get schedule for today.
         end_time (datetime): end time of the schedule. If not given, it will get schedule for today.
-        overlap (Person): person to get overlapping events. If not given, it will get schedule for person_id.
 
         Returns:
         list: Schedule of the person in json format.
         """
-        # if there is an overlap, ignore the cache and fetch the schedule.
-        overlap=self.overlap
-        if self.get_only_friends:
-            overlap=self.current_person
-        if overlap.type is not NoOne:
-            s = self.fetch_schedule(start_time, end_time)
-            self.last_events = s  # to save to file after viewer by request.
-            return s
         try:
-            evts = self.load_timed_schedule(start_time, end_time)
+            evts = self.load_timed_schedule(person_id, start_time, end_time)
+            effective_end_time = end_time if end_time is not None else datetime.now().date()
             # can we check if the cache has all the events we need?
-            if len(evts)==0 or evts[len(evts)-1].event_date < end_time:
+            if len(evts)==0 or evts[len(evts)-1].event_date.date() < effective_end_time:
                 # fetch the schedule and cache it.
-                self.cache_schedule(start_time, end_time)
-                evts = self.load_timed_schedule(start_time, end_time)
+                self.cache_schedule(person_id, start_time, end_time)
+                evts = self.load_timed_schedule(person_id, start_time, end_time)
         except FileNotFoundError:
-            self.cache_schedule(start_time, end_time)
-            evts = self.load_timed_schedule(start_time, end_time)
+            self.cache_schedule(person_id, start_time, end_time)
+            evts = self.load_timed_schedule(person_id, start_time, end_time)
         self.last_events = evts
         return evts
 
     # make a call alias for schedule, because it's a main function.
-    def __call__(self, start_time: date=None, end_time: date=None) -> Events:
+    def __call__(self, person_id: str, start_time: date=None, end_time: date=None) -> Events:
         """
         Alias for schedule function.
 
         Parameters:
-        person (Person): person to get schedule. If not given, it will get schedule for self.current_person.
+        person_id (str): ID of the person to get schedule for.
         start_time (datetime): start time of the schedule. If not given, it will get schedule for today.
         end_time (datetime): end time of the schedule. If not given, it will get schedule for today.
-        overlap (Person): person to get overlapping events. If not given, it will get schedule for person_id.
-        folder (str): folder to save the cache. If not given, it will save in .cache folder.
 
         Returns:
         list: Schedule of the person in json format.
         """
-        return self.schedule(start_time, end_time)
+        return self.schedule(person_id, start_time, end_time)
 
-    @property
-    def now(self) -> Event:
+    def now(self, person_id: str) -> Event:
         """
         Gets the current event for a person.
 
@@ -212,36 +192,33 @@ class Schedule:
         Event: Current event of the person.
         """
         now=moscow.localize(datetime.now())
-        evts = self.schedule()  # automatically gets the schedule for today.
+        evts = self.schedule(person_id)  # automatically gets the schedule for today.
         for evt in evts:
             if evt.start_datetime<=now<=evt.end_datetime:
                 return evt
 
 
-    @property
-    def next(self) -> Event:
+    def next(self, person_id: str) -> Event:
         # this function will return the next event after the current time, no matter if now is in the event or break.
         now=moscow.localize(datetime.now())
-        evts = self.schedule()
+        evts = self.schedule(person_id)
         for evt in evts:
             if evt.start_datetime>now:
                 return evt
 
-    @property
-    def on_an_event(self) -> bool:
+    def on_an_event(self, person_id: str) -> bool:
         # get today's schedule
-        evts = self.schedule()
+        evts = self.schedule(person_id)
         now=moscow.localize(datetime.now())
         for evt in evts:
             if evt.start_time<=now<=evt.end_time:
                 return True
         return False
 
-    @property
-    def on_break(self) -> bool:
+    def on_break(self, person_id: str) -> bool:
         # careful, it must find out if it's a real break and not night or before the first event!
         # return false if 0 events today
-        evts = self.schedule()
+        evts = self.schedule(person_id)
         if len(evts)==0:
             return False  # it can't be a break if there is no event.
         now=moscow.localize(datetime.now())
@@ -255,16 +232,15 @@ class Schedule:
                 return False
         return True  # yess, loop is over and none of the conditions are met.
 
-    @property
-    def on_non_working_time(self) -> bool:
+    def on_non_working_time(self, person_id: str) -> bool:
         #return not self.on_an_event and not self.on_break  # is it efficient? Probably not.
         # get today's schedule
-        evts = self.schedule()
+        evts = self.schedule(person_id)
         now=moscow.localize(datetime.now())
         # return true if length is 0
         return len(evts)==0 or now<evts[0].start_datetime or now>evts[-1].end_datetime  # one-liner to check if it's a non-working time.
 
-    def search_person(self, term: str, by_id: bool) -> People:
+    def search_person(self, term: str, by_id: bool = False) -> People:
         """
         Searches person in modeus. If not found, returns empty list.
 
@@ -276,11 +252,11 @@ class Schedule:
         People: List of people that match the term.
         """
         self.check_token()
-        self.results=People.from_big_mess(search_person(term, by_id, self.token)["_embedded"])
+        results=People.from_big_mess(search_person(term, by_id, self.token)["_embedded"])
         # if we searched with russian letter yo, and no results, then search with e instead.
-        if len(self.results)==0 and "ё" in term:
-            self.results=People.from_big_mess(search_person(term.replace("ё", "е"), by_id, self.token)["_embedded"])
-        return self.results
+        if len(results)==0 and "ё" in term:
+            results=People.from_big_mess(search_person(term.replace("ё", "е"), by_id, self.token)["_embedded"])
+        return results
 
     def who_goes(self, event: Event) -> People:
         """

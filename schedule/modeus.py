@@ -5,6 +5,7 @@ from pytz import UTC
 from functools import lru_cache, partial
 import asyncio
 import time
+import logging
 
 def modeus_parse_token(email: str, password: str) -> str:
     """
@@ -253,7 +254,8 @@ def search_person(term: str, by_id: bool, modeus_token: str) -> dict:
     RuntimeError: if can't find key embedded.
     """
     if by_id:
-        raise NotImplementedError("Search by id is not implemented yet")  # its bugging!
+        logging.warning("Search by id is not implemented yet. Returning empty result.")
+        return {"_embedded": {"persons": []}}
     mode="id" if by_id else "fullName"
     request_json = {
         "size": 10,

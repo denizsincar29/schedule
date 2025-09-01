@@ -64,7 +64,8 @@ class ScheduleBot:
         self.people_path = Path("people.json")
         # self.people = self._load_people()
         self.me = noone
-        self.schedule = Schedule(self.email, self.password, self.me)
+        self.me_id = None
+        self.schedule = Schedule(self.email, self.password)
         self.results = People()  # For name search results
         self.who_goes_results = People()  # For who_goes pagination
         self.last_schedule = Events()  # For schedule pagination
@@ -86,7 +87,6 @@ class ScheduleBot:
         mcp.tool()(self.get_schedule_page)
         mcp.tool()(self.debug)  # uncomment for debug tool
         mcp.tool()(self.search_event)
-        mcp.tool()(self.get_friends_schedule)
     
     def check_auth(self, ctx: Context) -> str:
         """Check if the user's name is set in the schedule client. Must be called in new chat contexts prior to any other schedule tool. If the user is authorized, read user's name and info in the language you are talking."""
@@ -100,16 +100,17 @@ class ScheduleBot:
 
         try:
             if user_id:
-                people = self.schedule.search_person(user_id, by_id=True)
+                self.me_id = user_id
+                self.schedule.set_me_id(self.me_id)
+                return create_success_response("User authorized successfully by ID.")
             else:
                 people = self.schedule.search_person(username, by_id=False)
-
-            if not people:
-                return create_error_response("User not found.", "auth_failed")
-
-            self.me = people[0]
-            self.schedule.set_person(self.me)
-            return create_success_response("User authorized successfully.", {"person_data": self.me.json()})
+                if not people:
+                    return create_error_response("User not found.", "auth_failed")
+                self.me = people[0]
+                self.me_id = self.me.person_id
+                self.schedule.set_me_id(self.me_id)
+                return create_success_response("User authorized successfully.", {"person_data": self.me.json()})
         except Exception as e:
             return format_error_message(e)
     
@@ -135,7 +136,9 @@ class ScheduleBot:
             person = self.results.get_person_by_id(id)
             if not person or person == noone:
                 return create_error_response("Person not found. Prompt the user for his name again.", "not_found")
-            self.schedule.set_person(person)
+            self.me = person
+            self.me_id = person.person_id
+            self.schedule.set_me_id(self.me_id)
             return create_success_response("User is set in the schedule client", {"person_data": person.json()})
         except Exception as e:
             return format_error_message(e)
@@ -143,13 +146,13 @@ class ScheduleBot:
     def get_schedule(self, start_date: str, end_date: str) -> str:
         """Get the schedule for the current user between dates (ISO format). Returns the schedule in JSON. Not used to get friends' schedules."""
         try:
+            if not self.me_id:
+                return create_error_response("User not authenticated. Call check_auth or set_person first.", "auth_required")
             if not start_date or not end_date:
                 return create_error_response("Start date or end date is empty", "empty_date")
             start_date = date.fromisoformat(start_date)
             end_date = date.fromisoformat(end_date)
-            self.schedule.overlap = noone
-            self.schedule.get_only_friends = False
-            self.last_schedule = self.schedule(start_date, end_date)
+            self.last_schedule = self.schedule(self.me_id, start_date, end_date)
             if len(self.last_schedule) == 0:
                 return create_success_response("There are no events in the specified range", {"events": []})
             if len(self.last_schedule) > 30:
@@ -186,11 +189,13 @@ class ScheduleBot:
 
     def what_is_now(self) -> str:
         """Get the current event or status for the user."""
+        if not self.me_id:
+            return create_error_response("User not authenticated. Call check_auth or set_person first.", "auth_required")
         try:
-            schedule_data = self.schedule.now
-            if self.schedule.on_break:
+            schedule_data = self.schedule.now(self.me_id)
+            if self.schedule.on_break(self.me_id):
                 return create_success_response("The user is on break")
-            elif self.schedule.on_non_working_time:
+            elif self.schedule.on_non_working_time(self.me_id):
                 return create_success_response("The user is not studying now")
             return create_success_response("Current event retrieved", {"event": schedule_data.json()})
         except Exception as e:
@@ -198,8 +203,10 @@ class ScheduleBot:
 
     def get_next(self) -> str:
         """Get the next event for the current user."""
+        if not self.me_id:
+            return create_error_response("User not authenticated. Call check_auth or set_person first.", "auth_required")
         try:
-            schedule_data = self.schedule.next
+            schedule_data = self.schedule.next(self.me_id)
             if not schedule_data:
                 return create_success_response("No next event found")
             return create_success_response("Next event retrieved", {"event": schedule_data.json()})
@@ -270,36 +277,6 @@ class ScheduleBot:
             return create_success_response("Events found", {"events": events.json()})
         except Exception as e:
             return format_error_message(e)
-
-    def get_friends_schedule(self, friend_id: str, start_date: str, end_date: str) -> str:
-        """Get the schedule for a friend or another person. Before using this tool, you need to get the friend's ID using the search_name tool."""
-        try:
-            if not friend_id or not start_date or not end_date:
-                return create_error_response("Friend name, start date or end date is empty", "missing_parameters")
-
-            # Search for the friend by ID
-            friend_results = self.schedule.search_person(friend_id, by_id=True)
-            if not friend_results:
-                return create_error_response("Friend not found", "friend_not_found")
-
-            friend = friend_results[0]
-            self.schedule.overlap = friend
-            self.schedule.get_only_friends = True
-            start_date = date.fromisoformat(start_date)
-            end_date = date.fromisoformat(end_date)
-            if start_date > end_date:
-                return create_error_response("Start date is after end date", "invalid_date_range")
-            events = self.schedule(start_date, end_date)
-            if len(events) == 0:
-                return create_success_response("There are no events in the specified range", {"events": []})
-            self.last_schedule = events
-            if len(self.last_schedule) > 30:
-                return create_success_response("There are too many events in the specified range. Please narrow it down using pagination tools.", {"events": events.json(), "pagination_required": True})
-            return create_success_response("Friend's schedule retrieved successfully", {"events": events.json()})
-        except Exception as e:
-            return format_error_message(e)
-
-
 
 # Create and run the bot
 # name is not main, the server imports this file.
