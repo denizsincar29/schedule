@@ -1,0 +1,19 @@
+FIXME: Error in what_is_now() function
+
+Error: '<' not supported between instances of 'datetime.date' and 'NoneType'
+
+Full traceback:
+Traceback (most recent call last):
+  File "C:\Users\User\files\pythons\safu\dmcp.py", line 180, in what_is_now
+    schedule_data = self.schedule.now
+                    ^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\files\pythons\safu\schedule\schedule.py", line 215, in now
+    evts = self.schedule()  # automatically gets the schedule for today.
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\User\files\pythons\safu\schedule\schedule.py", line 179, in schedule
+    if len(evts)==0 or evts[len(evts)-1].event_date < end_time:
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: '<' not supported between instances of 'datetime.date' and 'NoneType'
+
+Issue: In schedule.py line 179, either evts[len(evts)-1].event_date or end_time is None when trying to compare them.
+Location: schedule.py, line 179

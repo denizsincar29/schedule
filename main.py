@@ -1,6 +1,12 @@
 # NARFU schedule app.
 # Became so complex!
 
+# nuitka-if: {OS} in ("Windows", "Linux", "Darwin", "FreeBSD"):
+#    nuitka-project: --onefile
+# nuitka-project-else:
+#    nuitka-project: --mode=standalonealone
+
+
 import os
 import dotenv
 from pathlib import Path

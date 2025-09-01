@@ -64,6 +64,10 @@ class Event:
     def __ne__(self, other):
         return self.event_id!=other.event_id
 
+    def prop_eq(self, other):
+        """Compares the properties of this event with another event."""
+        return self.event_num==other.event_num and self.event_date==other.event_date and self.event_start==other.event_start and self.event_end==other.event_end and self.event_name==other.event_name and self.teacher==other.teacher and self.room_name==other.room_name and self.address==other.address and self.status==other.status
+
     def __str__(self):  # human readable in russian
         return self.humanize()  # i will rewrite humanize method to return the string
     def __repr__(self):  # for debugging
@@ -324,10 +328,19 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
     def __ne__(self, other):
         return self.events!=other.events
 
+
     def __add__(self, other):
         # add but remove duplicates
-        evt_set=set(self.events+other.events)
-        return Events(sorted(list(evt_set)))
+        # use prop eq to check duplicates
+        evt_list = self.events.copy()  # deepcopy is not working here
+        for event in other.events:
+            for el in evt_list:
+                if event.prop_eq(el):
+                    break
+            else:
+                evt_list.append(event)
+        return Events(evt_list)
+
 
     def __sub__(self, other):
         # return self.events-other.events # we cannot sub lists
@@ -615,6 +628,18 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         - Events: The events with the given status.
         """
         return Events([event for event in self.events if status.lower() in event.status.lower()])
+
+    def get_events_by_query(self, query: str) -> Self:
+        """
+        Returns the events that match the given query.
+
+        Parameters:
+        - query (str): The query to filter the events by.
+
+        Returns:
+        - Events: The events that match the given query.
+        """
+        return Events([event for event in self.events if query.lower() in str(event).lower()])  # what? was it that easy? I thaught we'd check each field!
 
     def overlap(self, other: Self) -> Self:
         """

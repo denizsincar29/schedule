@@ -175,7 +175,8 @@ class Schedule:
             return s
         try:
             evts = self.load_timed_schedule(start_time, end_time)
-            if len(evts)==0:
+            # can we check if the cache has all the events we need?
+            if len(evts)==0 or evts[len(evts)-1].event_date < end_time:
                 # fetch the schedule and cache it.
                 self.cache_schedule(start_time, end_time)
                 evts = self.load_timed_schedule(start_time, end_time)

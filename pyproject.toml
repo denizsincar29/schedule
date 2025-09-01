@@ -5,6 +5,7 @@ description = "A simple app to fetch and display the user's university schedule.
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastmcp>=2.9.0",
     "httpx>=0.28.1",
     "icalendar>=6.1.1",
     "python-dateutil>=2.9.0.post0",
