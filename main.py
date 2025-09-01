@@ -37,9 +37,12 @@ else:
     people.to_cache(str(people_path))
 
 me = people[0] if people else noone
+me_id = me.person_id if me != noone else None
 
 # Create a schedule object
-schedule = Schedule(email, password, me)
+schedule = Schedule(email, password)
+if me_id:
+    schedule.set_me_id(me_id)
 
 
 def ask_name(prompt, people, people_path, break_on_fail=True):
@@ -76,19 +79,11 @@ def search_cb(prompt):
     except Exception as e:
         raise CallFailed(str(e))
 
-def choose_friends(people):
-    if len(people) <= 1:
-        print("У вас нет друзей")
-        return
-    if len(people)>2:  # if there is only me, no need to ask
-        print("Выберите друга:")
-    person = ask_choice_from_list(people[1:], "Выберите человека")  # no space needed in prompt, it'll make a newline
-    person.pprint()
-    return person
-
-if schedule.current_person is noone:
+if not me_id:
     ask_name("Как вас зовут? Введите фио: ", people, str(people_path), break_on_fail=False)
-    schedule.current_person = people[0]  # there was no, now there is
+    me = people[0]
+    me_id = me.person_id
+    schedule.set_me_id(me_id)
 
 # Main loop
 
@@ -97,57 +92,35 @@ while True:
         cmd = input("@:> ").strip().lower()
         match cmd:
             case "today" | "сегодня":
-                s = schedule(start_time=date.today(), end_time=date.today())
+                s = schedule(me_id, start_time=date.today(), end_time=date.today())
                 print(s)  # it has __str__ method
             case "tomorrow" | "завтра":
-                s=schedule(start_time=date.today() + timedelta(days=1), end_time=date.today() + timedelta(days=1))
+                s=schedule(me_id, start_time=date.today() + timedelta(days=1), end_time=date.today() + timedelta(days=1))
                 print(s)
             case "week" | "неделя":
                 # this thingy will print till the end of the week
                 # get days till the end of the week
                 days = 6 - date.today().weekday()
-                s = schedule(start_time=date.today(), end_time=date.today() + timedelta(days=days))
+                s = schedule(me_id, start_time=date.today(), end_time=date.today() + timedelta(days=days))
                 print(s)
             case "next week" | "следующая неделя":
                 # get monday of the next week
                 days = 7 - date.today().weekday()
-                s = schedule(start_time=date.today() + timedelta(days=days), end_time=date.today() + timedelta(days=days + 6))
+                s = schedule(me_id, start_time=date.today() + timedelta(days=days), end_time=date.today() + timedelta(days=days + 6))
                 print(s)
             case "now" | "сейчас" | "!":  # bang is easier to type
-                evt = schedule.now  # it's a property function
+                evt = schedule.now(me_id)  # it's a property function
                 # if it's None, check if we are on a break or in the non-working hours
                 if evt is None:
-                    if schedule.on_break:
-                        print("Сейчас перерыв! Скоро начнётся следующая пара:\n", schedule.next)
-                    elif schedule.on_non_working_time:
+                    if schedule.on_break(me_id):
+                        print("Сейчас перерыв! Скоро начнётся следующая пара:\n", schedule.next(me_id))
+                    elif schedule.on_non_working_time(me_id):
                         print("Сейчас не рабочее время или пары закончились")
                 else:
                     print(evt)
             case "next" | "следующий" | "следующая" | "следующее" | "дальше" | "далее":  # this has record amount of synonyms!
-                evt = schedule.next
+                evt = schedule.next(me_id)
                 print(evt if evt is not None else "Следующей пары нет")
-            case "new friend" | "новый друг":
-                try:
-                    ask_name("Введите фио: ", people, str(people_path))
-                    schedule.overlap = people[-1]
-                    schedule.get_only_friends = True
-                    print("Сейчас вы просматриваете расписание этого человека. Чтобы вернуться к своему, введите 'me'")
-                    # debug prints:
-                    print(f"overlap: {schedule.overlap}\nme: {schedule.current_person}")
-                except RuntimeError as e:
-                    print(e)
-            case "me" | "я":
-                schedule.get_only_friends = False
-                schedule.overlap = noone
-                print("Теперь вы просматриваете своё расписание")
-            case "get friends schedule" | "расписание друзей" | "friendsched":
-                person = choose_friends(people)
-                schedule.overlap = person
-                schedule.get_only_friends = True
-            case "overlap" | "overlaps" | "пересечение":
-                person = choose_friends(people)
-                schedule.overlap = person
-                schedule.get_only_friends = False # me also, we get events that overlap with this person
             case "who goes" | "кто идёт":
                 # get events that are last fetched and ask for the event
                 s = schedule.last_events
@@ -176,7 +149,7 @@ while True:
             case _:
                 try:
                     start_time, end_time = parse_date(cmd)
-                    print(schedule(start_time=start_time, end_time=end_time))
+                    print(schedule(me_id, start_time=start_time, end_time=end_time))
                 except ValueError:
                     print("Не удалось распознать команду")  # all cases are handled, now date parsing is the only thing left and failed
         # check if person is None or NoOne
