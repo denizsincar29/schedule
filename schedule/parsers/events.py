@@ -556,10 +556,10 @@ class Events:  # if this were rust, it would be a trait for Vec<Event>
         if start_time==... and end_time==...:
             return deepcopy(self) # return a copy of the object
         if start_time==...:
-            return Events([event for event in self.events if event.event_time<=end_time])
+            return Events([event for event in self.events if event.event_start<=end_time])
         if end_time==...:
-            return Events([event for event in self.events if start_time<=event.event_time])
-        return Events([event for event in self.events if start_time<=event.event_time<=end_time])
+            return Events([event for event in self.events if start_time<=event.event_start])
+        return Events([event for event in self.events if start_time<=event.event_start<=end_time])
 
     def get_events_between_dates(self, start_date: date=..., end_date: date=...) -> Self:
         """

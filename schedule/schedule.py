@@ -159,7 +159,7 @@ class Schedule:
             evts = self.load_timed_schedule(person_id, start_time, end_time)
             effective_end_time = end_time if end_time is not None else datetime.now().date()
             # can we check if the cache has all the events we need?
-            if len(evts)==0 or evts[len(evts)-1].event_date.date() < effective_end_time:
+            if len(evts)==0 or evts[len(evts)-1].event_date < effective_end_time:
                 # fetch the schedule and cache it.
                 self.cache_schedule(person_id, start_time, end_time)
                 evts = self.load_timed_schedule(person_id, start_time, end_time)
