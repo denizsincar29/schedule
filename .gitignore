@@ -1,7 +1,18 @@
-*.log
-.env
-.venv/
-.cache/
-people.json
+# Python
 __pycache__/
-schedule.txt
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Go
+*.test
+*.out
+
+# Rust
+target/
+
+# OS / tooling
+.DS_Store
+.env
