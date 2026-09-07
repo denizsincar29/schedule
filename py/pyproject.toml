@@ -1,0 +1,22 @@
+[project]
+name = "schedule-py"
+version = "0.1.0"
+description = "NArFU RUZ schedule reader — Python reference implementation (stdlib CLI + FastMCP server)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+# The CLI is stdlib-only. Install the optional extra to run the MCP server:
+#   pip install -e ".[mcp]"
+[project.optional-dependencies]
+mcp = ["mcp>=1.2"]
+dev = ["pytest"]
+
+[project.scripts]
+schedule = "schedule.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["schedule"]

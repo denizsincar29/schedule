@@ -113,8 +113,9 @@ Full names come from the official staff page `https://narfu.ru/sveden/employees/
 (microdata `itemprop="fio"`, ~850 entries). Each implementation:
 
 - fetches it lazily and caches the parsed `short → full` map locally for 30 days
-  (Python: next to the script; Go/Rust: the platform cache dir — see each
-  language's README section);
+  in the platform user cache dir under `narfu_schedule/employees_index.json`
+  (Linux `$XDG_CACHE_HOME`/`~/.cache`, Windows `%LOCALAPPDATA%`, macOS
+  `~/Library/Caches`) — all three languages share one cache file;
 - resolves **only unambiguous** short→full matches;
 - on any network/cache failure **degrades silently** to the timetable's own
   short names (never crashes, never guesses initials).

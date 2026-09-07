@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "narfu-schedule": {
+      "command": "python3",
+      "args": ["-m", "schedule.mcp_server"],
+      "env": { "PYTHONPATH": "${workspaceFolder}/py" }
+    }
+  }
+}
