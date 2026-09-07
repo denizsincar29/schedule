@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/denizsincar29/schedule/spec/schema.json",
+  "title": "NArFU schedule data model (shared by the Python / Go / Rust implementations)",
+  "description": "One data model every implementation of the schedule program must emit and consume. JSON keys are fixed snake_case; the same --json output is produced by py/, go/ and rust/ for the same request (byte-identical, key order as in this file).",
+
+  "definitions": {
+    "lesson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["num", "time_start", "time_end", "kind", "subject",
+                   "teacher", "teacher_full", "room", "addr"],
+      "properties": {
+        "num": {
+          "type": "string",
+          "description": "Pair number as printed by the timetable, e.g. \"1\"."
+        },
+        "time_start": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "description": "Start of the pair, 24h HH:MM, e.g. \"08:20\"."
+        },
+        "time_end": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "description": "End of the pair, 24h HH:MM, e.g. \"09:55\"."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Kind of work as on the site: Лекция / Практическое занятие / Лабораторная работа / ...",
+          "examples": ["Лекция"]
+        },
+        "subject": {
+          "type": "string",
+          "description": "Discipline name without the lecturer suffix."
+        },
+        "teacher": {
+          "type": "string",
+          "description": "Short form exactly as the timetable prints it, e.g. \"Абрамова Л.В.\". Empty when the site lists no lecturer."
+        },
+        "teacher_full": {
+          "type": ["string", "null"],
+          "description": "Resolved full name from the official staff list (e.g. \"Абрамова Любовь Валерьевна\"), or null when --full-names is off, the resolution is ambiguous, or the name is unknown."
+        },
+        "room": {
+          "type": "string",
+          "description": "Auditorium as printed, e.g. \"ауд. 44\"."
+        },
+        "addr": {
+          "type": "string",
+          "description": "Building street address after the auditorium, e.g. \"наб. Северной Двины, д. 2\"."
+        }
+      }
+    },
+    "day": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "weekday", "lessons"],
+      "properties": {
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "ISO date YYYY-MM-DD."
+        },
+        "weekday": {
+          "type": "string",
+          "description": "Lowercase Russian weekday, e.g. \"понедельник\".",
+          "examples": ["понедельник", "суббота"]
+        },
+        "lessons": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/lesson" },
+          "description": "Sorted by pair number. Empty when the day column exists but has no classes."
+        }
+      }
+    },
+    "week": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["group", "oid", "week_start", "days"],
+      "properties": {
+        "group": {
+          "type": "string",
+          "description": "Human group name as passed via --group; empty string when only --oid was given."
+        },
+        "oid": {
+          "type": "string",
+          "description": "RUZ timetable oid actually used for the request."
+        },
+        "week_start": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Monday of the returned window (ISO). For a single-day request it is the Monday of that day's week."
+        },
+        "days": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/day" },
+          "description": "Published day columns within the window, in chronological order; a present day with an empty lessons array means that day has no classes; an absent day means the site does not publish it."
+        }
+      }
+    }
+  },
+
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["group", "oid", "week_start", "days"],
+  "properties": {
+    "group": { "$ref": "#/definitions/week/properties/group" },
+    "oid": { "$ref": "#/definitions/week/properties/oid" },
+    "week_start": { "$ref": "#/definitions/week/properties/week_start" },
+    "days": { "$ref": "#/definitions/week/properties/days" }
+  }
+}

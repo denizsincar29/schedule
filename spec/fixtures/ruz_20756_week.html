@@ -1,0 +1,2540 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<title>Группа 151318. Расписание САФУ</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+<meta name="description" content="САФУ. Расписание учебных занятий">
+<meta name="keywords" content="САФУ, пары, РУЗ, RUZ, занятия, расписание, студент, преподаватель"/>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<meta property="og:image" content="https://ruz.narfu.ru/i/splash-s.png"/>
+<meta name="og:title" content="Группа 151318. Расписание САФУ"/>
+<meta name="og:description" content="Группа 151318. Расписание САФУ"/>
+
+<link rel="stylesheet" type="text/css" href="/lib/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="/lib/bootstrap/css/bootstrap-theme.min.css">
+
+<link rel="stylesheet" type="text/css" href="/lib/gavrikov/ruz.css">
+
+<!-- <script src="https://code.jquery.com/jquery-1.11.0.js"></script>   2 -->
+
+<script src="/i/js/external/jquery/jquery.js"></script>
+
+<script src="/lib/gavrikov/ruz.js"></script>
+<script src="/lib/bootstrap/js/bootstrap.js"></script>
+
+<link href="/i/js/jquery-ui.css" rel="stylesheet">
+<script src="/i/js/jquery-ui.min.js"></script>
+<style>
+.ac_row {
+	padding: 10px;
+}
+
+.ac_describe {
+	font-size: 70%;
+}
+.ui-autocomplete {
+z-index: 1100;	
+	
+}
+
+.ui-autocomplete .ui-menu-item:nth-child(odd) {
+	background: #eee;
+}
+.ui-autocomplete .ui-menu-item:nth-child(even) {
+	background: #fff;
+}
+
+</style>
+
+
+<script>
+	$(document).ready( function() {
+		$(".srch-frm").click(function(e){
+			if ($("#form-search").is(":visible")) {
+                $("#form-search").hide();
+            }
+			else {
+                $("#form-search").show();
+                $("#lecturers").focus();
+            }
+		});
+
+		$( "#lecturers" ).autocomplete({
+		  autoFocus: true,
+		  source: "/i/ac.php",
+		  minLength: 3,
+		  select: function( event, ui ) {
+			window.location="https://ruz.narfu.ru/?timetable&lecturer="+ui.item.lecturerOid;
+		  },
+		  _renderMenu: function( ul, items ) {
+			  var that = this;
+			  $.each( items, function( index, item ) {
+				that._renderItemData( ul, item );
+			  });
+			  $( ul ).find( "li:odd" ).addClass( "odd" );
+		   }
+		})
+		.autocomplete( "instance" )._renderItem = function( ul, item ) {
+			
+		  return $( "<li>" )
+			.append( "<div class=\"ac_row\"><div class=\"ac_label\">" + item.fio + "</div><div class=\"ac_describe\">" + item.chair + "</div></div>" )
+			.appendTo( ul );
+		}
+		
+		
+	});
+</script>
+
+<style>
+    .additional {
+        padding-top: 4px;
+    }
+
+    .additional img
+    {
+        width: 24px; height: 24px; padding: 0px; margin: 0px;
+    }
+
+    .additional span.label
+    {
+        display: inline-block; padding: 0 0 0 5px; margin-top: 3px; vertical-align: middle;
+        color: #0f0f0f;
+    }
+
+</style>
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation" name="begin">
+    <div class="container-fluid header_container"> <!-- container -->
+
+      <div class="col-xs-5 col-sm-6 col-md-8">
+
+         <div class="hidden-xs hidden-sm header_title">
+         <a class="navbar-brand" href="http://ruz.narfu.ru"><span class="ruz">ruz</span>.narfu.ru /
+         <span>
+                            151318                Информационные системы и технологии                     </span>
+         </a>
+         </div>
+
+		
+
+         <div class="visible-xs"><nobr>
+         <a style="padding-left: 0;" class="navbar-brand" href="http://ruz.narfu.ru"><span class="ruz">ruz</span>.narfu.ru</a></nobr>
+         </div>
+
+         <div class="visible-sm"><nobr>
+         <a class="navbar-brand" href="http://ruz.narfu.ru"><span class="ruz">ruz</span>.narfu.ru</a></nobr>
+         </div>
+
+
+      </div>
+      
+        <div class="col-xs-7 col-sm-6 col-md-4 cmd_header">
+			
+			  
+				<a href="#" class="btn btn-default btn-md srch-frm" title="Поиск по преподавателю"/>
+				  <span class="cmd glyphicon glyphicon-search"></span></a>
+			 
+            			
+
+              				
+                <div class="btn-group iCal">
+                  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                      <span class="hidden-xs">Добавить в&nbsp;ваш календарь <span class="cmd glyphicon glyphicon-file"></span></span>
+                      <span class="visible-xs">iCal <span class="cmd glyphicon glyphicon-file"></span></span>
+                  </button>
+                  <ul class="dropdown-menu pull-right">
+                    <li><a href="http://ruz.narfu.ru?icalendar&oid=20756&cod=151318&from=07.09.2026">Скачать</a></li>
+                    <li><a href="webcal://ruz.narfu.ru/?icalendar&oid=20756&cod=151318">Подписаться</a></li>
+                  </ul>
+                </div>
+
+              
+              <a href="javascript:history.go(-1)" class="btn btn-default btn-md">
+                  <span class="cmd glyphicon glyphicon-chevron-left"></span></a>
+                        <a href="./" class="btn btn-default btn-md"> <!--  hidden-xs -->
+              <span class="cmd glyphicon glyphicon-home"></span></a>
+			
+        </div>
+        	  
+	   
+	  <div id="form-search" class="form-search" style="margin: 10px 0px 10px 0px; display: none; clear: both;">
+	  <center>
+	  <input type="text" class="search-query" id="lecturers" style="font-size: 12pt; min-width: 300px; padding: 3px" placeholder="Начните вводить ФИО преподавателя"/>
+	  </center>
+	  </div>
+	  	  
+    </div>
+</div>
+
+<div class="container-fluid content">
+
+
+    <p class="status">Расписание не&nbsp;менялось с&nbsp;10:31 7 Sep</p>
+    <!-- Время последнего обновления -->
+
+    
+        
+        
+    <!-- id="nav-groups" -->
+    <ul class="nav nav-tabs"> <!--   nav-pills -->
+    <!--<li class="li_title visible-xs">Неделя: </li>-->
+            <!-- active делать по #week_... -->
+        <li class="active">
+        <a data-target="#week_1" data-toggle="tab">
+        <!-- href="#week_1" -->
+        <!-- data-target="#week_1" -->
+            <span class="visible-xs">
+                7 сен            </span><!-- W -->
+            <span class="visible-sm visible-md">07.09.2026</span>
+            <span class="visible-lg">07.09.2026&ndash;12.09.2026</span>
+
+        </a></li>
+            <!-- active делать по #week_... -->
+        <li>
+        <a data-target="#week_2" data-toggle="tab">
+        <!-- href="#week_2" -->
+        <!-- data-target="#week_2" -->
+            <span class="visible-xs">
+                14 сен            </span><!-- W -->
+            <span class="visible-sm visible-md">14.09.2026</span>
+            <span class="visible-lg">14.09.2026&ndash;19.09.2026</span>
+
+        </a></li>
+            <!-- active делать по #week_... -->
+        <li>
+        <a data-target="#week_3" data-toggle="tab">
+        <!-- href="#week_3" -->
+        <!-- data-target="#week_3" -->
+            <span class="visible-xs">
+                21 сен            </span><!-- W -->
+            <span class="visible-sm visible-md">21.09.2026</span>
+            <span class="visible-lg">21.09.2026&ndash;26.09.2026</span>
+
+        </a></li>
+            <!-- active делать по #week_... -->
+        <li>
+        <a data-target="#week_4" data-toggle="tab">
+        <!-- href="#week_4" -->
+        <!-- data-target="#week_4" -->
+            <span class="visible-xs">
+                28 сен            </span><!-- W -->
+            <span class="visible-sm visible-md">28.09.2026</span>
+            <span class="visible-lg">28.09.2026&ndash;03.10.2026</span>
+
+        </a></li>
+            <!-- active делать по #week_... -->
+        <li>
+        <a data-target="#week_5" data-toggle="tab">
+        <!-- href="#week_5" -->
+        <!-- data-target="#week_5" -->
+            <span class="visible-xs">
+                5 окт            </span><!-- W -->
+            <span class="visible-sm visible-md">05.10.2026</span>
+            <span class="visible-lg">05.10.2026&ndash;10.10.2026</span>
+
+        </a></li>
+            <!-- active делать по #week_... -->
+        <li>
+        <a data-target="#week_6" data-toggle="tab">
+        <!-- href="#week_6" -->
+        <!-- data-target="#week_6" -->
+            <span class="visible-xs">
+                12 окт            </span><!-- W -->
+            <span class="visible-sm visible-md">12.10.2026</span>
+            <span class="visible-lg">12.10.2026&ndash;17.10.2026</span>
+
+        </a></li>
+        </ul>
+    <div class="tab-content">
+
+    <h4 class="visible-xs visible-sm">151318        Информационные системы и технологии</h4>
+
+    
+                    	
+				<!-- x-qty: 40;//-->
+			
+			
+            <div class="row tab-pane active" id="week_1">
+        
+                                        <div class="list col-md-2 today">
+            
+            <div class="dayofweek">
+
+            понедельник,
+            07.09.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Абрамова Л.В.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;44</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Абрамова Л.В.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;44</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Абрамова Л.В.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;44</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Абрамова Л.В.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;44</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            вторник,
+            08.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            среда,
+            09.09.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                                                                                    <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">1</span>
+                                </div>
+                                                             <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">2</span>
+                                </div>
+                                                             <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">3</span>
+                                </div>
+                                                                                 
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">4</span>
+                                                      <span class="time_para">
+                                                    14:30&ndash;16:05</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;44</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">4</span>
+                                                      <span class="time_para">
+                                                    14:30&ndash;16:05</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;44</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">5</span>
+                                                      <span class="time_para">
+                                                    16:15&ndash;17:50</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;44</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">5</span>
+                                                      <span class="time_para">
+                                                    16:15&ndash;17:50</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;44</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            четверг,
+            10.09.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Деменкова Е.А.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1017</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Деменкова Е.А.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1017</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Деменкова Е.А.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1017</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Деменкова Е.А.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1017</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            пятница,
+            11.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list last col-md-2">
+            
+            <div class="dayofweek">
+
+            суббота,
+            12.09.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm blue">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                                                        <span class="group">Подгруппа 151318_1</span>
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;47</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm blue">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                                                        <span class="group">Подгруппа 151318_1</span>
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;47</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm blue">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                                                        <span class="group">Подгруппа 151318_1</span>
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;47</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm blue">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                                                        <span class="group">Подгруппа 151318_1</span>
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;47</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;44</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;44</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm blue">
+                          <span class="num_para">4</span>
+                                                      <span class="time_para">
+                                                    14:30&ndash;16:05</span>
+
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                                                        <span class="group">Подгруппа 151318_2</span>
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;47</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm blue">
+                          <span class="num_para">4</span>
+                                                      <span class="time_para">
+                                                    14:30&ndash;16:05</span>
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                                                        <span class="group">Подгруппа 151318_2</span>
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;47</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm blue">
+                          <span class="num_para">5</span>
+                                                      <span class="time_para">
+                                                    16:15&ndash;17:50</span>
+
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                                                        <span class="group">Подгруппа 151318_2</span>
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;47</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm blue">
+                          <span class="num_para">5</span>
+                                                      <span class="time_para">
+                                                    16:15&ndash;17:50</span>
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                                                        <span class="group">Подгруппа 151318_2</span>
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;47</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        		
+		
+        </div><!-- row -->
+            <div class="row tab-pane" id="week_2">
+        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            понедельник,
+            14.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            вторник,
+            15.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            среда,
+            16.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            четверг,
+            17.09.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;47</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;47</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm blue">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1024</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm blue">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1024</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm yellow">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1024</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm yellow">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1024</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            пятница,
+            18.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list last col-md-2">
+            
+            <div class="dayofweek">
+
+            суббота,
+            19.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        		
+		
+        </div><!-- row -->
+            <div class="row tab-pane" id="week_3">
+        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            понедельник,
+            21.09.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;47</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;47</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            вторник,
+            22.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            среда,
+            23.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            четверг,
+            24.09.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                                                                                    <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">1</span>
+                                </div>
+                                                                                 
+                          <div class="timetable_sheet hidden-xs hidden-sm blue">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1024</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm blue">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1024</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm yellow">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1024</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm yellow">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1024</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            пятница,
+            25.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list last col-md-2">
+            
+            <div class="dayofweek">
+
+            суббота,
+            26.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        		
+		
+        </div><!-- row -->
+            <div class="row tab-pane" id="week_4">
+        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            понедельник,
+            28.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            вторник,
+            29.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            среда,
+            30.09.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            четверг,
+            01.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            пятница,
+            02.10.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;37</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;37</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm yellow">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1024</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm yellow">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1024</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm blue">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1024</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm blue">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+                          <span class="kindOfWork">Лабораторная работа</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1024</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list last col-md-2">
+            
+            <div class="dayofweek">
+
+            суббота,
+            03.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        		
+		
+        </div><!-- row -->
+            <div class="row tab-pane" id="week_5">
+        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            понедельник,
+            05.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            вторник,
+            06.10.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                                                                                    <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">1</span>
+                                </div>
+                                                                                 
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль) (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;37</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">2</span>
+                                                      <span class="time_para">
+                                                    10:10&ndash;11:45</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Прикладные задачи машинного и глубокого обучения (модуль)</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;37</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm yellow">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1024</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm yellow">
+                          <span class="num_para">3</span>
+                                                      <span class="time_para">
+                                                    12:00&ndash;13:35</span>
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1024</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            среда,
+            07.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            четверг,
+            08.10.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                                                                                    <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">1</span>
+                                </div>
+                                                             <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">2</span>
+                                </div>
+                                                             <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">3</span>
+                                </div>
+                                                                                 
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">4</span>
+                                                      <span class="time_para">
+                                                    14:30&ndash;16:05</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;34</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">4</span>
+                                                      <span class="time_para">
+                                                    14:30&ndash;16:05</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;34</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">5</span>
+                                                      <span class="time_para">
+                                                    16:15&ndash;17:50</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;34</b>,
+                               наб. Северной Двины, д. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">5</span>
+                                                      <span class="time_para">
+                                                    16:15&ndash;17:50</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;34</b>,
+
+                               наб. Северной Двины, д. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            пятница,
+            09.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list last col-md-2">
+            
+            <div class="dayofweek">
+
+            суббота,
+            10.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        		
+		
+        </div><!-- row -->
+            <div class="row tab-pane" id="week_6">
+        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            понедельник,
+            12.10.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm yellow">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика (<nobr>Васендина И.С.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1024</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm yellow">
+                          <span class="num_para">1</span>
+                                                      <span class="time_para">
+                                                    08:20&ndash;09:55</span>
+                          <span class="kindOfWork">Практическое занятие</span>
+                          <span class="discipline">Производственная практика, проектно-технологическая практика</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Васендина И.С.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1024</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            вторник,
+            13.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            среда,
+            14.10.2026            </div>
+
+                                                                                                                    					
+                    						<!-- //-->	
+                          
+                          
+                                                                                                                    <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">1</span>
+                                </div>
+                                                             <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">2</span>
+                                </div>
+                                                             <div class="timetable_sheet hidden-xs hidden-sm transparent">
+                                <span class="num_para">3</span>
+                                </div>
+                                                                                 
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">4</span>
+                                                      <span class="time_para">
+                                                    14:30&ndash;16:05</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1016</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">4</span>
+                                                      <span class="time_para">
+                                                    14:30&ndash;16:05</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1016</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    						<!-- //-->	
+                          
+                          
+                                                    
+                          <div class="timetable_sheet hidden-xs hidden-sm green">
+                          <span class="num_para">5</span>
+                                                      <span class="time_para">
+                                                    16:15&ndash;17:50</span>
+
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта (<nobr>Богданова Е.Н.</nobr>)</span>
+						  						  
+						  
+						  						  
+                          <!--<span class="lecturer"></span>-->
+
+                          
+
+
+
+                          <span class="auditorium">
+                              <!--<hr />-->
+                              <b>ауд.&nbsp;1016</b>,
+                               наб. Северной Двины, д. 2, корп. 2							  
+							  
+							  
+
+                          </span>
+
+                          </div>
+
+                          
+                          <div class="timetable_sheet_xs visible-xs visible-sm green">
+                          <span class="num_para">5</span>
+                                                      <span class="time_para">
+                                                    16:15&ndash;17:50</span>
+                          <span class="kindOfWork">Лекция</span>
+                          <span class="discipline">Технико-экономическое обоснование проекта</span>
+						  
+						  						  
+						  
+						  							  <span class="lecturer">(Богданова Е.Н.)</span>
+						  						  
+						  
+                          
+                          <!---->
+
+                          <span class="auditorium">
+
+                              <b>ауд.&nbsp;1016</b>,
+
+                               наб. Северной Двины, д. 2, корп. 2
+
+						                            </span>
+						  
+						  
+
+                          </div>
+
+                           
+
+
+                    
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            четверг,
+            15.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list col-md-2">
+            
+            <div class="dayofweek">
+
+            пятница,
+            16.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        
+                                        <div class="list last col-md-2">
+            
+            <div class="dayofweek">
+
+            суббота,
+            17.10.2026            </div>
+
+                
+            </div><!-- list -->
+
+             
+
+            <br class="visible-xs" />        		
+		
+        </div><!-- row -->
+    
+
+        </div><!-- tab-content -->
+
+		
+		
+
+
+
+
+</div>
+
+
+                        <!-- Yandex.Metrika counter -->
+<script type="text/javascript" >
+    (function (d, w, c) {
+        (w[c] = w[c] || []).push(function() {
+            try {
+                w.yaCounter50590399 = new Ya.Metrika2({
+                    id:50590399,
+                    clickmap:true,
+                    trackLinks:true,
+                    accurateTrackBounce:true,
+                    webvisor:true
+                });
+            } catch(e) { }
+        });
+
+        var n = d.getElementsByTagName("script")[0],
+            s = d.createElement("script"),
+            f = function () { n.parentNode.insertBefore(s, n); };
+        s.type = "text/javascript";
+        s.async = true;
+        s.src = "https://mc.yandex.ru/metrika/tag.js";
+
+        if (w.opera == "[object Opera]") {
+            d.addEventListener("DOMContentLoaded", f, false);
+        } else { f(); }
+    })(document, window, "yandex_metrika_callbacks2");
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/50590399" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+</body>
+
+</html>
